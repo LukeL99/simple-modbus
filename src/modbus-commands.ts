@@ -26,6 +26,8 @@ export enum ModbusCommandExcepton {
 
 export type UnitIdGetter = (requestPacket: Buffer) => number
 export type FunctionCodeGetter = (requestPacket: Buffer) => ModbusFunctionCode
+export type RegisterAddressGetter = (requestPacket: Buffer) => number
+export type RegisterValueGetter = (requestPacket: Buffer) => number
 
 export type SuccessGetter = (requestPacket: Buffer) => Buffer
 export type FailureGetter = (requestPacket: Buffer, exception: ModbusCommandExcepton) => Buffer
@@ -59,24 +61,34 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   }
 
   public success(): void {
-    this.onComplete.emit(new Buffer('success'))
+    this.onComplete.emit(this._successGetter(this._rawPacket))
   }
 
   public fail(exception: ModbusCommandExcepton): void {
-    this.onComplete.emit(new Buffer('fail'))
+    this.onComplete.emit(this._failureGetter(this._rawPacket, exception))
   }
 
 }
 
 export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegisterCommand> {
 
-  // private _registerAddress: number
-  // protected _unitId: number
-  // protected _functionCode = ModbusFunctionCode.PRESET_SINGLE_REGISTER
+  private _registerAddressGetter: RegisterAddressGetter
+  private _registerValueGetter: RegisterValueGetter
+
+  public get registerAddress() {
+    return this._registerAddressGetter(this._rawPacket)
+  }
+
+  public get registerValue() {
+    return this._registerValueGetter(this._rawPacket)
+  }
 
   constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
-              successGetter: SuccessGetter, failureGetter: FailureGetter) {
+              successGetter: SuccessGetter, failureGetter: FailureGetter, registerAddressGetter: RegisterAddressGetter,
+              registerValueGetter: RegisterValueGetter) {
     super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
+    this._registerAddressGetter = registerAddressGetter
+    this._registerValueGetter = registerValueGetter
   }
 
 }

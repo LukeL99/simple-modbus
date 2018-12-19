@@ -1,6 +1,12 @@
 import {
   ModbusFunctionCode,
-  ModbusCommand, PresetSingleRegisterCommand, UnitIdGetter, FunctionCodeGetter, SuccessGetter, FailureGetter
+  ModbusCommand,
+  PresetSingleRegisterCommand,
+  UnitIdGetter,
+  FunctionCodeGetter,
+  SuccessGetter,
+  FailureGetter,
+  RegisterAddressGetter, RegisterValueGetter
 } from './modbus-commands'
 import { ModbusCommandError } from './error/modbus-errors'
 
@@ -20,7 +26,7 @@ export class ModbusTcpEventFactory implements ModbusEventFactory {
     return requestPacket.readUInt8(7)
   })
 
-  private _packetCopySuccessGetter: SuccessGetter = (requestPacket => new Buffer(requestPacket))
+  private _packetCopySuccessGetter: SuccessGetter = (requestPacket => Buffer.from(requestPacket))
 
   private _failureGetter: FailureGetter = ((requestPacket, exception) => {
     let response: Uint8Array = new Uint8Array()
@@ -47,6 +53,14 @@ export class ModbusTcpEventFactory implements ModbusEventFactory {
     return new Buffer(response)
   })
 
+  private _registerAddressGetter: RegisterAddressGetter = (requestPacket => {
+    return requestPacket.readUInt16BE(8)
+  })
+
+  private _registerValueGetter: RegisterValueGetter = (requestPacket => {
+    return requestPacket.readUInt16BE(10)
+  })
+
   public fromPacket(packet: Buffer) {
     // Minimum Modbus TCP request packet size is 12
     if (packet.length < 12) {
@@ -58,8 +72,10 @@ export class ModbusTcpEventFactory implements ModbusEventFactory {
     // Determine packet type, and call appropriate constructor
     switch (fc) {
       case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
-        return new PresetSingleRegisterCommand(packet, this._unitIdGetter, this._functionCodeGetter,
-          this._packetCopySuccessGetter, this._failureGetter)
+        return new PresetSingleRegisterCommand(packet, this._unitIdGetter,
+          this._functionCodeGetter, this._packetCopySuccessGetter,
+          this._failureGetter, this._registerAddressGetter,
+          this._registerValueGetter)
       default:
         throw new ModbusCommandError('Function code not implemented')
     }
