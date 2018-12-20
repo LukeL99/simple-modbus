@@ -5,8 +5,8 @@
 [![Greenkeeper badge](https://badges.greenkeeper.io/alexjoverm/typescript-library-starter.svg)](https://greenkeeper.io/)
 [![Travis](https://travis-ci.org/LukeL99/simple-modbus.svg)](https://travis-ci.org/LukeL99/simple-modbus)
 [![Coveralls](https://coveralls.io/repos/github/LukeL99/simple-modbus/badge.svg)](https://coveralls.io/github/LukeL99/simple-modbus)
-[![Dev Dependencies](https://david-dm.org/alexjoverm/typescript-library-starter/dev-status.svg)](https://david-dm.org/alexjoverm/typescript-library-starter?type=dev)
-[![Donate](https://img.shields.io/badge/donate-paypal-blue.svg)](https://paypal.me/AJoverMorales)
+[![Dev Dependencies](https://david-dm.org/LukeL99/simple-modbus/dev-status.svg)](https://david-dm.org/LukeL99/simple-modbus?type=dev)
+[![Donate](https://img.shields.io/badge/donate-paypal-blue.svg)](https://paypal.me/lukel99)
 
 A starter project that makes creating a TypeScript library extremely easy.
 
