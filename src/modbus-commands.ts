@@ -34,8 +34,17 @@ export type FailureGetter = (requestPacket: Buffer, exception: ModbusCommandExce
 
 export abstract class ModbusCommand<T extends ModbusCommand<any>> {
 
+  /**
+   * Fires on either success or failure, with the response bytes. Mainly used by the server to send a response.
+   */
   public onComplete = new TypedEvent<Buffer>()
+  /**
+   * Fires on a call of the success method.
+   */
   public onSuccess = new TypedEvent<Buffer>()
+  /**
+   * Fires on a call of the fail method.
+   */
   public onFailure = new TypedEvent<Buffer>()
 
   protected readonly _rawPacket: Buffer
