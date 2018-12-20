@@ -1,10 +1,3 @@
-// export declare class Error {
-//   public name: string;
-//   public message: string;
-//   public stack: string;
-//   constructor(message?: string);
-// }
-
 export class ModbusTcpServerError extends Error {
 
   constructor(public message: string) {
@@ -12,6 +5,7 @@ export class ModbusTcpServerError extends Error {
     this.name = 'ModbusTcpServerError';
     this.message = message;
     this.stack = (new Error()).stack;
+    Object.setPrototypeOf(this, ModbusTcpServerError.prototype);
   }
   toString() {
     return this.name + ': ' + this.message;
@@ -25,6 +19,7 @@ export class ModbusCommandError extends Error {
     this.name = 'ModbusCommandError'
     this.message = message
     this.stack = (new Error()).stack
+    Object.setPrototypeOf(this, ModbusCommandError.prototype);
   }
 
   toString() {

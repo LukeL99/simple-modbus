@@ -1,5 +1,6 @@
-import { ModbusCommandExcepton, PresetSingleRegisterCommand } from '../src/modbus-commands'
+import { ModbusCommandExcepton, ModbusFunctionCode, PresetSingleRegisterCommand } from '../src/modbus-commands'
 import { ModbusTcpEventFactory } from '../src/modbus-event-factory'
+import { ModbusCommandError } from '../src/error/modbus-errors'
 
 const eventFactory: ModbusTcpEventFactory = new ModbusTcpEventFactory()
 
@@ -19,6 +20,11 @@ describe("PresetSingleRegisterCommand test", () => {
   it("should return an instance of PresetSingleRegisterCommand", () => {
     let command = eventFactory.fromPacket(Buffer.from(validCommandBytes))
     expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
+  })
+
+  it("should return the right function code", () => {
+    let command = eventFactory.fromPacket(Buffer.from(validCommandBytes))
+    expect(command.functionCode).toEqual(ModbusFunctionCode.PRESET_SINGLE_REGISTER)
   })
 
   it("should return the right register address", () => {
@@ -54,4 +60,30 @@ describe("PresetSingleRegisterCommand test", () => {
     })
     command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
   })
+})
+
+describe("Malformed packet tests", () => {
+
+  it("should throw a command exception on invalid fc", done => {
+    const invalidCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x14, 0x00, 0x00, 0x00, 0x03]
+    try {
+      eventFactory.fromPacket(Buffer.from(invalidCommandBytes))
+    } catch( e) {
+      expect(e).toBeInstanceOf(ModbusCommandError)
+      expect(e.message).toEqual('Function code not implemented')
+      done()
+    }
+  })
+
+  it("should throw a command exception on short packet", done => {
+    const invalidCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x14, 0x00, 0x00]
+    try {
+      eventFactory.fromPacket(Buffer.from(invalidCommandBytes))
+    } catch( e) {
+      expect(e).toBeInstanceOf(ModbusCommandError)
+      expect(e.message).toEqual('Packet length too short')
+      done()
+    }
+  })
+
 })
