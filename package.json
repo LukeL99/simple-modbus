@@ -58,7 +58,9 @@
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/test/"
+      "/test/",
+      "/src/simple-modbus.ts",
+      "/src/modbus-tcp-server.ts"
     ],
     "coverageThreshold": {
       "global": {
