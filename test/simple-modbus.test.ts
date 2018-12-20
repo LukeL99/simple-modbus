@@ -42,7 +42,7 @@ describe("PresetSingleRegisterCommand test", () => {
     expect(command.unitId).toEqual(0x11)
   })
 
-  it("should emit a valid response on success", done => {
+  it("should emit a complete response on success", done => {
     let command = eventFactory.fromPacket(Buffer.from(validCommandBytes))
     command.onComplete.on((buf: Buffer) => {
       expect(buf).toEqual(Buffer.from(validResponseBytes))
@@ -51,10 +51,29 @@ describe("PresetSingleRegisterCommand test", () => {
     command.success()
   })
 
-  it("should emit a valid response on failure", done => {
+  it("should emit a success response on success", done => {
+    let command = eventFactory.fromPacket(Buffer.from(validCommandBytes))
+    command.onSuccess.on((buf: Buffer) => {
+      expect(buf).toEqual(Buffer.from(validResponseBytes))
+      done()
+    })
+    command.success()
+  })
+
+  it("should emit a complete response on failure", done => {
     const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
     let command = eventFactory.fromPacket(Buffer.from(validCommandBytes))
     command.onComplete.on((buf: Buffer) => {
+      expect(buf).toEqual(Buffer.from(failureBytes))
+      done()
+    })
+    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+  })
+
+  it("should emit a failure response on failure", done => {
+    const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
+    let command = eventFactory.fromPacket(Buffer.from(validCommandBytes))
+    command.onFailure.on((buf: Buffer) => {
       expect(buf).toEqual(Buffer.from(failureBytes))
       done()
     })

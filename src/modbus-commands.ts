@@ -35,6 +35,8 @@ export type FailureGetter = (requestPacket: Buffer, exception: ModbusCommandExce
 export abstract class ModbusCommand<T extends ModbusCommand<any>> {
 
   public onComplete = new TypedEvent<Buffer>()
+  public onSuccess = new TypedEvent<Buffer>()
+  public onFailure = new TypedEvent<Buffer>()
 
   protected readonly _rawPacket: Buffer
   protected readonly _unitIdGetter: UnitIdGetter
@@ -42,7 +44,7 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   protected readonly _successGetter: SuccessGetter
   protected readonly _failureGetter: FailureGetter
 
-  // Slave ID for RTU
+  // If RTU, unitId is equivalent to slaveId
   public get unitId() {
     return this._unitIdGetter(this._rawPacket)
   }
@@ -61,11 +63,15 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   }
 
   public success(): void {
-    this.onComplete.emit(this._successGetter(this._rawPacket))
+    const successPacket: Buffer = this._successGetter(this._rawPacket)
+    this.onComplete.emit(successPacket)
+    this.onSuccess.emit(successPacket)
   }
 
   public fail(exception: ModbusCommandExcepton): void {
-    this.onComplete.emit(this._failureGetter(this._rawPacket, exception))
+    const failurePacket: Buffer = this._failureGetter(this._rawPacket, exception)
+    this.onComplete.emit(failurePacket)
+    this.onFailure.emit(failurePacket)
   }
 
 }
