@@ -46,10 +46,10 @@ describe("PresetSingleRegisterCommand test", () => {
   })
 
   it("should emit a valid response on failure", done => {
+    const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
     let command = eventFactory.fromPacket(Buffer.from(validCommandBytes))
     command.onComplete.on((buf: Buffer) => {
-      // TODO: Fill this in
-      expect(buf).toEqual(Buffer.from(validResponseBytes))
+      expect(buf).toEqual(Buffer.from(failureBytes))
       done()
     })
     command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)

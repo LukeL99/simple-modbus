@@ -29,7 +29,7 @@ export class ModbusTcpEventFactory implements ModbusEventFactory {
   private _packetCopySuccessGetter: SuccessGetter = (requestPacket => Buffer.from(requestPacket))
 
   private _failureGetter: FailureGetter = ((requestPacket, exception) => {
-    let response: Uint8Array = new Uint8Array()
+    let response = []
 
     // First 2 bytes are the Transaction Identifier
     response[0] = requestPacket.readUInt8(0)
@@ -50,7 +50,7 @@ export class ModbusTcpEventFactory implements ModbusEventFactory {
     response[7] = requestPacket.readUInt8(7) | 0b10000000
     response[8] = exception
 
-    return new Buffer(response)
+    return new Buffer(new Uint8Array(response))
   })
 
   private _registerAddressGetter: RegisterAddressGetter = (requestPacket => {
