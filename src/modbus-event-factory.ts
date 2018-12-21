@@ -50,7 +50,7 @@ export class ModbusTcpEventFactory implements ModbusEventFactory {
     response[7] = requestPacket.readUInt8(7) | 0b10000000
     response[8] = exception
 
-    return new Buffer(new Uint8Array(response))
+    return Buffer.from(new Uint8Array(response))
   })
 
   private _registerAddressGetter: RegisterAddressGetter = (requestPacket => {
