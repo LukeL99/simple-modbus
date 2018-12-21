@@ -58,7 +58,6 @@
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/test/",
       "/src/util/typed-event.ts"
     ],
     "coverageThreshold": {

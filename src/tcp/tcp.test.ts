@@ -1,6 +1,6 @@
-import { ModbusCommandExcepton, ModbusFunctionCode, PresetSingleRegisterCommand } from '../src/modbus-commands'
-import { ModbusCommandError } from '../src/error/modbus-errors'
-import { ModbusTcp } from '../src/simple-modbus'
+import { ModbusCommandExcepton, ModbusFunctionCode, PresetSingleRegisterCommand } from '../modbus-commands'
+import { ModbusCommandError } from '../error/modbus-errors'
+import { ModbusTcp } from '../simple-modbus'
 
 const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
 
@@ -87,7 +87,7 @@ describe("Malformed packet tests", () => {
     const invalidCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x14, 0x00, 0x00, 0x00, 0x03]
     try {
       commandFactory.fromPacket(Buffer.from(invalidCommandBytes))
-    } catch( e) {
+    } catch(e) {
       expect(e).toBeInstanceOf(ModbusCommandError)
       expect(e.message).toEqual('Function code not implemented')
       done()
@@ -98,12 +98,13 @@ describe("Malformed packet tests", () => {
     const invalidCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x14, 0x00, 0x00]
     try {
       commandFactory.fromPacket(Buffer.from(invalidCommandBytes))
-    } catch( e) {
+    } catch(e) {
       expect(e).toBeInstanceOf(ModbusCommandError)
       expect(e.message).toEqual('Packet length too short')
-      expect(e.toString()).toEqual('ModbusCommandError: Packet length too short')
       done()
     }
   })
+
+  // It should error when a packet has the wrong length byte
 
 })

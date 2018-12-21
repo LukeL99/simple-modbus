@@ -1,4 +1,4 @@
-import { ModbusCommandError, ModbusServerError } from '../src/error/modbus-errors'
+import { ModbusCommandError, ModbusServerError } from './modbus-errors'
 
 describe("Error Tests", () => {
 
