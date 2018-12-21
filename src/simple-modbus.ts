@@ -1,3 +1,3 @@
 import * as ModbusTcp from './tcp'
 
-export default { ModbusTcp }
+export { ModbusTcp }

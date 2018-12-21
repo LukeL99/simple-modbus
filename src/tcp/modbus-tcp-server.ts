@@ -1,14 +1,14 @@
 import net from 'net'
-import './util/typed-event'
-import { ModbusServer } from './simple-modbus'
-import { ModbusTcpEventFactory } from './modbus-event-factory'
-import { ModbusFunctionCode } from './modbus-commands'
+import '../util/typed-event'
+import { ModbusServer } from '../modbus-server'
+import { ModbusTcpCommandFactory } from './modbus-tcp-command-factory'
+import { ModbusFunctionCode } from '../modbus-commands'
 
 // TODO: Properly handle connection open, close, and packet boundaries
 
-export default class ModbusTcpServer extends ModbusServer {
+export class ModbusTcpServer extends ModbusServer {
   private _tcpServer: net.Server
-  private _eventFactory = new ModbusTcpEventFactory()
+  private _eventFactory = new ModbusTcpCommandFactory()
 
   constructor() {
     super()
