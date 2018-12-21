@@ -12,6 +12,9 @@ import { TypedEvent } from './util/typed-event'
 //   PRESET_MULTIPLE_REGISTERS = 0X16
 // }
 
+/* istanbul ignore next */
 export abstract class ModbusServer {
+
   public onPresetSingleRegister = new TypedEvent<PresetSingleRegisterCommand>()
+
 }

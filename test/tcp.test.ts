@@ -1,8 +1,8 @@
 import { ModbusCommandExcepton, ModbusFunctionCode, PresetSingleRegisterCommand } from '../src/modbus-commands'
 import { ModbusCommandError } from '../src/error/modbus-errors'
-import { ModbusTcpCommandFactory } from '../src/tcp/modbus-tcp-command-factory'
+import { ModbusTcp } from '../src/simple-modbus'
 
-const commandFactory: ModbusTcpCommandFactory = new ModbusTcpCommandFactory()
+const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
 
 describe("PresetSingleRegisterCommand test", () => {
 
@@ -101,6 +101,7 @@ describe("Malformed packet tests", () => {
     } catch( e) {
       expect(e).toBeInstanceOf(ModbusCommandError)
       expect(e.message).toEqual('Packet length too short')
+      expect(e.toString()).toEqual('ModbusCommandError: Packet length too short')
       done()
     }
   })

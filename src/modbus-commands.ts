@@ -87,8 +87,8 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
 
 export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegisterCommand> {
 
-  private _registerAddressGetter: RegisterAddressGetter
-  private _registerValueGetter: RegisterValueGetter
+  private readonly _registerAddressGetter: RegisterAddressGetter
+  private readonly _registerValueGetter: RegisterValueGetter
 
   public get registerAddress() {
     return this._registerAddressGetter(this._rawPacket)
