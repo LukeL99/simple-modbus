@@ -13,7 +13,7 @@ export default class ModbusTcpServer extends ModbusServer {
   constructor() {
     super()
     this._tcpServer = net.createServer(socket => {
-      socket.on('data', (data) => {
+      socket.on('data', data => {
         // Build object from packet
         let command = this._eventFactory.fromPacket(data)
 
@@ -28,7 +28,6 @@ export default class ModbusTcpServer extends ModbusServer {
         command.onComplete.once((res: Buffer) => {
           socket.write(res)
         })
-
       })
     })
   }
@@ -45,5 +44,4 @@ export default class ModbusTcpServer extends ModbusServer {
     }
     return this
   }
-
-};
+}
