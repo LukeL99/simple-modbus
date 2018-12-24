@@ -6,11 +6,15 @@ import { ModbusFunctionCode } from '../modbus-commands'
 
 // TODO: Properly handle connection open, close, and packet boundaries
 
+interface ModbusTcpServerOptions {
+  autoRespondSuccess?: boolean
+}
+
 export class ModbusTcpServer extends ModbusServer {
   private _tcpServer: net.Server
   private _eventFactory = new ModbusTcpCommandFactory()
 
-  constructor() {
+  constructor(options?: ModbusTcpServerOptions) {
     super()
     this._tcpServer = net.createServer(socket => {
       const _this: ModbusTcpServer = this
@@ -29,6 +33,10 @@ export class ModbusTcpServer extends ModbusServer {
           case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
             _this.onPresetSingleRegister.emit(command)
             break
+        }
+
+        if(options && options.autoRespondSuccess){
+          command.success()
         }
 
       })
