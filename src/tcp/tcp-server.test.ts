@@ -1,4 +1,4 @@
-const net = require('net') as any
+const net = require('net')
 jest.mock('net')
 
 import { ModbusTcpServer } from './modbus-tcp-server'
