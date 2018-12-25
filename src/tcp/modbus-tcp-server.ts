@@ -13,9 +13,14 @@ interface ModbusTcpServerOptions {
 export class ModbusTcpServer extends ModbusServer {
   private _tcpServer: net.Server
   private _eventFactory = new ModbusTcpCommandFactory()
+  private _autoRespondSuccess: boolean = false
 
   constructor(options?: ModbusTcpServerOptions) {
     super()
+    if (options && options.autoRespondSuccess) {
+      this._autoRespondSuccess = true
+    }
+
     this._tcpServer = net.createServer(socket => {
       const _this: ModbusTcpServer = this
 
@@ -35,7 +40,7 @@ export class ModbusTcpServer extends ModbusServer {
             break
         }
 
-        if(options && options.autoRespondSuccess){
+        if (_this._autoRespondSuccess) {
           command.success()
         }
 
@@ -51,7 +56,6 @@ export class ModbusTcpServer extends ModbusServer {
   public close(): ModbusTcpServer {
     if (this._tcpServer) {
       this._tcpServer.close()
-      delete this._tcpServer
     }
     return this
   }

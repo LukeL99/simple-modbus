@@ -4,35 +4,45 @@ import { EventEmitter } from 'events'
 
 class MockTcpServer extends EventEmitter {
 
-  listen(port: number) {
+  listen = jest.fn((port: number) => {
     return this
-  }
+  })
 
-  close() {
+  close = jest.fn(() => {
     return this
-  }
+  })
 
 }
 
 class MockTcpSocket extends EventEmitter {
 
-  write(data: Buffer) {
+  write = jest.fn((data: Buffer) => {
     this.emit('write', data)
-  }
+  })
 
 }
 
-const server = new MockTcpServer()
-const socket = new MockTcpSocket()
+let server = new MockTcpServer()
+let socket = new MockTcpSocket()
 
-const createServer = jest.fn((cb: any) => {
+function reset() {
+  server = new MockTcpServer()
+  socket = new MockTcpSocket()
+  net.__server = server
+  net.__socket = socket
+}
+
+function createServer(cb: any) {
   cb(socket)
   return server
-})
+}
+
+net.createServer = createServer
+net.__reset = reset
+net.Socket = MockTcpSocket
+net.Server = MockTcpSocket
 
 net.__server = server
 net.__socket = socket
-
-net.createServer = createServer
 
 module.exports = net
