@@ -1,4 +1,5 @@
 import { TypedEvent } from './util/typed-event'
+import { ModbusCommandError } from './error/modbus-errors'
 
 export enum ModbusFunctionCode {
   READ_COIL_STATUS = 0X01,
@@ -37,17 +38,18 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   /**
    * Fires on either success or failure, with the response bytes. Mainly used by the server to send a response.
    */
-  public onComplete = new TypedEvent<Buffer>()
+  public onComplete = new TypedEvent<ModbusCommand<any>>()
   /**
    * Fires on a call of the success method.
    */
-  public onSuccess = new TypedEvent<Buffer>()
+  public onSuccess = new TypedEvent<ModbusCommand<any>>()
   /**
    * Fires on a call of the fail method.
    */
-  public onFailure = new TypedEvent<Buffer>()
+  public onFailure = new TypedEvent<ModbusCommand<any>>()
 
   protected readonly _rawPacket: Buffer
+  protected _responsePacket?: Buffer
   protected readonly _unitIdGetter: UnitIdGetter
   protected readonly _functionCodeGetter: FunctionCodeGetter
   protected readonly _successGetter: SuccessGetter
@@ -62,6 +64,13 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
     return this._functionCodeGetter(this._rawPacket)
   }
 
+  public get responsePacket(): Buffer {
+    if (!this._responsePacket) {
+      throw new ModbusCommandError('Tried to read response packet, but success or fail has not been called.')
+    }
+    return this._responsePacket
+  }
+
   protected constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
                         successGetter: SuccessGetter, failureGetter: FailureGetter) {
     this._rawPacket = rawPacket
@@ -72,15 +81,15 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   }
 
   public success(): void {
-    const successPacket: Buffer = this._successGetter(this._rawPacket)
-    this.onComplete.emit(successPacket)
-    this.onSuccess.emit(successPacket)
+    this. _responsePacket = this._successGetter(this._rawPacket)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
   }
 
   public fail(exception: ModbusCommandExcepton): void {
-    const failurePacket: Buffer = this._failureGetter(this._rawPacket, exception)
-    this.onComplete.emit(failurePacket)
-    this.onFailure.emit(failurePacket)
+    this. _responsePacket = this._failureGetter(this._rawPacket, exception)
+    this.onComplete.emit(this)
+    this.onFailure.emit(this)
   }
 
 }

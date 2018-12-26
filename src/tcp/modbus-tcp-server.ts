@@ -2,7 +2,7 @@ import net from 'net'
 import '../util/typed-event'
 import { ModbusServer } from '../modbus-server'
 import { ModbusTcpCommandFactory } from './modbus-tcp-command-factory'
-import { ModbusFunctionCode } from '../modbus-commands'
+import { ModbusCommand, ModbusFunctionCode } from '../modbus-commands'
 
 // TODO: Properly handle connection open, close, and packet boundaries
 
@@ -29,8 +29,8 @@ export class ModbusTcpServer extends ModbusServer {
         let command = this._eventFactory.fromPacket(data)
 
         // Listen for success or failure events being emitted from command object
-        command.onComplete.once((res: Buffer) => {
-          socket.write(res)
+        command.onComplete.once((command: ModbusCommand<any>) => {
+          socket.write(command.responsePacket)
         })
 
         // Determine packet type and emit corresponding event type

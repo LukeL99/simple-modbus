@@ -1,4 +1,9 @@
-import { ModbusCommandExcepton, ModbusFunctionCode, PresetSingleRegisterCommand } from '../modbus-commands'
+import {
+  ModbusCommand,
+  ModbusCommandExcepton,
+  ModbusFunctionCode,
+  PresetSingleRegisterCommand
+} from '../modbus-commands'
 import { ModbusCommandError } from '../error/modbus-errors'
 import { ModbusTcp } from '../simple-modbus'
 
@@ -44,8 +49,8 @@ describe("PresetSingleRegisterCommand test", () => {
 
   it("should emit a complete response on success", done => {
     let command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
-    command.onComplete.on((buf: Buffer) => {
-      expect(buf).toEqual(Buffer.from(validResponseBytes))
+    command.onComplete.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(validResponseBytes))
       done()
     })
     command.success()
@@ -53,8 +58,8 @@ describe("PresetSingleRegisterCommand test", () => {
 
   it("should emit a success response on success", done => {
     let command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
-    command.onSuccess.on((buf: Buffer) => {
-      expect(buf).toEqual(Buffer.from(validResponseBytes))
+    command.onSuccess.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(validResponseBytes))
       done()
     })
     command.success()
@@ -63,8 +68,8 @@ describe("PresetSingleRegisterCommand test", () => {
   it("should emit a complete response on failure", done => {
     const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
     let command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
-    command.onComplete.on((buf: Buffer) => {
-      expect(buf).toEqual(Buffer.from(failureBytes))
+    command.onComplete.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
     command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
@@ -73,36 +78,38 @@ describe("PresetSingleRegisterCommand test", () => {
   it("should emit a failure response on failure", done => {
     const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
     let command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
-    command.onFailure.on((buf: Buffer) => {
-      expect(buf).toEqual(Buffer.from(failureBytes))
+    command.onFailure.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
     command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
   })
+
+  it("should throw an error when accessing response packet before success or fail has been called", () => {
+    let command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    expect(() => {
+      let response = command.responsePacket
+      // }).toThrowError(ModbusCommandError)
+    }).toThrowError(new ModbusCommandError('Tried to read response packet, but success or fail has not been called.'))
+  })
+
+
 })
 
 describe("Malformed packet tests", () => {
 
-  it("should throw a command exception on invalid fc", done => {
+  it("should throw a command exception on invalid fc", () => {
     const invalidCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x14, 0x00, 0x00, 0x00, 0x03]
-    try {
-      commandFactory.fromPacket(Buffer.from(invalidCommandBytes))
-    } catch(e) {
-      expect(e).toBeInstanceOf(ModbusCommandError)
-      expect(e.message).toEqual('Function code not implemented')
-      done()
-    }
+    expect(() => {
+      let command = commandFactory.fromPacket(Buffer.from(invalidCommandBytes))
+    }).toThrowError(new ModbusCommandError('Function code not implemented'))
   })
 
-  it("should throw a command exception on short packet", done => {
+  it("should throw a command exception on short packet", () => {
     const invalidCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x14, 0x00, 0x00]
-    try {
-      commandFactory.fromPacket(Buffer.from(invalidCommandBytes))
-    } catch(e) {
-      expect(e).toBeInstanceOf(ModbusCommandError)
-      expect(e.message).toEqual('Packet length too short')
-      done()
-    }
+    expect(() => {
+      let command = commandFactory.fromPacket(Buffer.from(invalidCommandBytes))
+    }).toThrowError(new ModbusCommandError('Packet length too short'))
   })
 
   // It should error when a packet has the wrong length byte

@@ -49,7 +49,7 @@ describe('Server tests', () => {
     net.__socket.emit('data', validRequest)
   })
 
-  it('should not respond if auto response is not set', (done) => {
+  it('should not respond on socket if auto response is not set', (done) => {
     const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
     const validResponse = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
     const server = new ModbusTcpServer({ autoRespondSuccess: false }).listen(502)
@@ -82,5 +82,7 @@ describe('Server tests', () => {
 
     net.__socket.emit('data', validRequest)
   })
+
+  // TODO: rewrite test names and test close and listen methods
 
 })
