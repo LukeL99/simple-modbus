@@ -29,8 +29,12 @@ export type UnitIdGetter = (requestPacket: Buffer) => number
 export type FunctionCodeGetter = (requestPacket: Buffer) => ModbusFunctionCode
 export type RegisterAddressGetter = (requestPacket: Buffer) => number
 export type RegisterValueGetter = (requestPacket: Buffer) => number
+export type CoilAddressGetter = (requestPacket: Buffer) => number
+export type CoilLengthGetter = (requestPacket: Buffer) => number
 
-export type SuccessGetter = (requestPacket: Buffer) => Buffer
+export type GenericSuccessGetter = (requestPacket: Buffer) => Buffer
+export type BoolArraySuccessGetter = (reqestPacket: Buffer, data: Array<boolean>) => Buffer
+export type NumberArraySuccessGetter = (reqestPacket: Buffer, data: Array<number>) => Buffer
 export type FailureGetter = (requestPacket: Buffer, exception: ModbusCommandExcepton) => Buffer
 
 export abstract class ModbusCommand<T extends ModbusCommand<any>> {
@@ -52,7 +56,7 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   protected _responsePacket?: Buffer
   protected readonly _unitIdGetter: UnitIdGetter
   protected readonly _functionCodeGetter: FunctionCodeGetter
-  protected readonly _successGetter: SuccessGetter
+  protected readonly _successGetter: GenericSuccessGetter | BoolArraySuccessGetter | NumberArraySuccessGetter
   protected readonly _failureGetter: FailureGetter
 
   // If RTU, unitId is equivalent to slaveId
@@ -72,18 +76,13 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   }
 
   protected constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
-                        successGetter: SuccessGetter, failureGetter: FailureGetter) {
+                        successGetter: GenericSuccessGetter | BoolArraySuccessGetter | NumberArraySuccessGetter,
+                        failureGetter: FailureGetter) {
     this._rawPacket = rawPacket
     this._unitIdGetter = unitIdGetter
     this._functionCodeGetter = functionCodeGetter
     this._successGetter = successGetter
     this._failureGetter = failureGetter
-  }
-
-  public success(): void {
-    this. _responsePacket = this._successGetter(this._rawPacket)
-    this.onComplete.emit(this)
-    this.onSuccess.emit(this)
   }
 
   public fail(exception: ModbusCommandExcepton): void {
@@ -95,7 +94,6 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
 }
 
 export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegisterCommand> {
-
   private readonly _registerAddressGetter: RegisterAddressGetter
   private readonly _registerValueGetter: RegisterValueGetter
 
@@ -107,12 +105,47 @@ export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegis
     return this._registerValueGetter(this._rawPacket)
   }
 
+  public success(): void {
+    this. _responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
+  }
+
   constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
-              successGetter: SuccessGetter, failureGetter: FailureGetter, registerAddressGetter: RegisterAddressGetter,
-              registerValueGetter: RegisterValueGetter) {
+              successGetter: GenericSuccessGetter, failureGetter: FailureGetter,
+              registerAddressGetter: RegisterAddressGetter, registerValueGetter: RegisterValueGetter) {
     super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
     this._registerAddressGetter = registerAddressGetter
     this._registerValueGetter = registerValueGetter
+  }
+
+}
+
+export class ReadCoilStatusCommand extends ModbusCommand<ReadCoilStatusCommand> {
+
+  private readonly _coilAddressGetter: CoilAddressGetter
+  private readonly _coilLengthGetter: CoilLengthGetter
+
+  public get coilStartAddress() {
+    return this._coilAddressGetter(this._rawPacket)
+  }
+
+  public get numberOfCoils() {
+    return this._coilLengthGetter(this._rawPacket)
+  }
+
+  public success(data: Array<boolean>): void {
+    this. _responsePacket = (this._successGetter as BoolArraySuccessGetter)(this._rawPacket, data)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
+  }
+
+  constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
+              successGetter: BoolArraySuccessGetter, failureGetter: FailureGetter,
+              coilAddressGetter: CoilAddressGetter, coilLengthGetter: CoilLengthGetter) {
+    super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
+    this._coilAddressGetter = coilAddressGetter
+    this._coilLengthGetter = coilLengthGetter
   }
 
 }

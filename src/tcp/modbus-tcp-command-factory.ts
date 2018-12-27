@@ -1,8 +1,13 @@
 import {
+  BoolArraySuccessGetter,
+  CoilAddressGetter,
+  CoilLengthGetter,
   FailureGetter,
-  FunctionCodeGetter, ModbusFunctionCode, PresetSingleRegisterCommand,
-  RegisterAddressGetter, RegisterValueGetter,
-  SuccessGetter,
+  FunctionCodeGetter, GenericSuccessGetter,
+  ModbusFunctionCode,
+  PresetSingleRegisterCommand, ReadCoilStatusCommand,
+  RegisterAddressGetter,
+  RegisterValueGetter,
   UnitIdGetter
 } from '../modbus-commands'
 import { ModbusCommandError } from '../error/modbus-errors'
@@ -18,7 +23,45 @@ export class ModbusTcpCommandFactory implements ModbusCommandFactory {
     return requestPacket.readUInt8(7)
   })
 
-  private _packetCopySuccessGetter: SuccessGetter = (requestPacket => Buffer.from(requestPacket))
+  private _packetCopySuccessGetter: GenericSuccessGetter = (requestPacket => Buffer.from(requestPacket))
+
+  private _readCoilSuccessGetter: BoolArraySuccessGetter = (requestPacket, data) => {
+    let response = []
+
+    // First 2 bytes are the Transaction Identifier
+    response[0] = requestPacket.readUInt8(0)
+    response[1] = requestPacket.readUInt8(1)
+
+    // Next 2 bytes are protocol ID. These should always be 0x0000. But the protocol says to copy them from the request.
+    response[2] = requestPacket.readUInt8(2)
+    response[3] = requestPacket.readUInt8(3)
+
+    // Copy UnitId from request
+    response[6] = requestPacket.readUInt8(6)
+
+    // Copy Function Code from request
+    response[7] = requestPacket.readUInt8(7)
+
+    // Calculate number of bytes with coil data in response
+    const coilsRequested = this._coilLengthGetter(requestPacket)
+    const byteLength = Math.ceil(coilsRequested / 8.0)
+    response[8] = byteLength
+
+    // TCP byte length data
+    response[4] = (byteLength + 3) >> 8
+    response[5] = (byteLength + 3) & 0xFF
+
+    // Pad array with false at end to end on an 8 bit boundary
+    const paddedData = [...data, ...(new Array<boolean>(8 - (coilsRequested % 8)).fill(false))]
+    for (let i = 0; i < byteLength; i++) {
+      // Take a slice of the array of length 8, reverse it, then fill the accumulator with it (starting from right)
+      response[9+i] = paddedData.slice(i * 8, 8 + (i * 8)).reduce(
+        (accumulator, currentValue, currentIndex) => accumulator | ((currentValue ? 1 : 0) << currentIndex),
+        0x00)
+    }
+
+    return Buffer.from(new Uint8Array(response))
+  }
 
   private _failureGetter: FailureGetter = ((requestPacket, exception) => {
     let response = []
@@ -46,10 +89,18 @@ export class ModbusTcpCommandFactory implements ModbusCommandFactory {
   })
 
   private _registerAddressGetter: RegisterAddressGetter = (requestPacket => {
-    return requestPacket.readUInt16BE(8)
+    return requestPacket.readUInt16BE(8) + 40001
   })
 
   private _registerValueGetter: RegisterValueGetter = (requestPacket => {
+    return requestPacket.readUInt16BE(10)
+  })
+
+  private _coilAddressGetter: CoilAddressGetter = (requestPacket => {
+    return requestPacket.readUInt16BE(8) + 1
+  })
+
+  private _coilLengthGetter: CoilLengthGetter = (requestPacket => {
     return requestPacket.readUInt16BE(10)
   })
 
@@ -68,6 +119,11 @@ export class ModbusTcpCommandFactory implements ModbusCommandFactory {
           this._functionCodeGetter, this._packetCopySuccessGetter,
           this._failureGetter, this._registerAddressGetter,
           this._registerValueGetter)
+      case ModbusFunctionCode.READ_COIL_STATUS:
+        return new ReadCoilStatusCommand(packet, this._unitIdGetter,
+          this._functionCodeGetter, this._readCoilSuccessGetter,
+          this._failureGetter, this._coilAddressGetter,
+          this._coilLengthGetter)
       default:
         throw new ModbusCommandError('Function code not implemented')
     }

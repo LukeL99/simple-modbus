@@ -2,24 +2,24 @@ import net from 'net'
 import '../util/typed-event'
 import { ModbusServer } from '../modbus-server'
 import { ModbusTcpCommandFactory } from './modbus-tcp-command-factory'
-import { ModbusCommand, ModbusFunctionCode } from '../modbus-commands'
+import {
+  ModbusCommand,
+  ModbusFunctionCode,
+  PresetSingleRegisterCommand,
+  ReadCoilStatusCommand
+} from '../modbus-commands'
 
 // TODO: Properly handle connection open, close, and packet boundaries
 
 interface ModbusTcpServerOptions {
-  autoRespondSuccess?: boolean
 }
 
 export class ModbusTcpServer extends ModbusServer {
   private _tcpServer: net.Server
   private _eventFactory = new ModbusTcpCommandFactory()
-  private _autoRespondSuccess: boolean = false
 
   constructor(options?: ModbusTcpServerOptions) {
     super()
-    if (options && options.autoRespondSuccess) {
-      this._autoRespondSuccess = true
-    }
 
     this._tcpServer = net.createServer(socket => {
       const _this: ModbusTcpServer = this
@@ -36,12 +36,11 @@ export class ModbusTcpServer extends ModbusServer {
         // Determine packet type and emit corresponding event type
         switch (command.functionCode) {
           case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
-            _this.onPresetSingleRegister.emit(command)
+            _this.onPresetSingleRegister.emit(command as PresetSingleRegisterCommand)
             break
-        }
-
-        if (_this._autoRespondSuccess) {
-          command.success()
+          case ModbusFunctionCode.READ_COIL_STATUS:
+            _this.onReadCoilStatus.emit(command as ReadCoilStatusCommand)
+            break
         }
 
       })
