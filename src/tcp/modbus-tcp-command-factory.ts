@@ -11,9 +11,16 @@ import {
   UnitIdGetter
 } from '../modbus-commands'
 import { ModbusCommandError } from '../error/modbus-errors'
-import { ModbusCommandFactory } from '../modbus-command-factory'
+import { ModbusCommandFactory, ModbusCommandFactoryOptions } from '../modbus-command-factory'
 
-export class ModbusTcpCommandFactory implements ModbusCommandFactory {
+export class ModbusTcpCommandFactory extends ModbusCommandFactory {
+
+  private _options?: ModbusCommandFactoryOptions
+
+  constructor(options?: ModbusCommandFactoryOptions) {
+    super(options)
+    this._options = options
+  }
 
   private _unitIdGetter: UnitIdGetter = (requestPacket => {
     return requestPacket.readUInt8(6)
@@ -55,7 +62,7 @@ export class ModbusTcpCommandFactory implements ModbusCommandFactory {
     const paddedData = [...data, ...(new Array<boolean>(8 - (coilsRequested % 8)).fill(false))]
     for (let i = 0; i < byteLength; i++) {
       // Take a slice of the array of length 8, reverse it, then fill the accumulator with it (starting from right)
-      response[9+i] = paddedData.slice(i * 8, 8 + (i * 8)).reduce(
+      response[9 + i] = paddedData.slice(i * 8, 8 + (i * 8)).reduce(
         (accumulator, currentValue, currentIndex) => accumulator | ((currentValue ? 1 : 0) << currentIndex),
         0x00)
     }
@@ -88,17 +95,33 @@ export class ModbusTcpCommandFactory implements ModbusCommandFactory {
     return Buffer.from(new Uint8Array(response))
   })
 
-  private _registerAddressGetter: RegisterAddressGetter = (requestPacket => {
-    return requestPacket.readUInt16BE(8) + 40001
+  private _holdingRegisterAddressGetter: RegisterAddressGetter = (requestPacket => {
+    return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 40001
   })
+
+  // private _simepleHoldingRegisterAddressGetter: RegisterAddressGetter = (requestPacket => {
+  //   return requestPacket.readUInt16BE(8)
+  // })
+  //
+  // private _modbusHoldingRegisterAddressGetter: RegisterAddressGetter = (requestPacket => {
+  //   return requestPacket.readUInt16BE(8) + 40001
+  // })
 
   private _registerValueGetter: RegisterValueGetter = (requestPacket => {
     return requestPacket.readUInt16BE(10)
   })
 
   private _coilAddressGetter: CoilAddressGetter = (requestPacket => {
-    return requestPacket.readUInt16BE(8) + 1
+    return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 1
   })
+
+  // private _simpleCoilAddressGetter: CoilAddressGetter = (requestPacket => {
+  //   return requestPacket.readUInt16BE(8)
+  // })
+  //
+  // private _modbusCoilAddressGetter: CoilAddressGetter = (requestPacket => {
+  //   return requestPacket.readUInt16BE(8) + 1
+  // })
 
   private _coilLengthGetter: CoilLengthGetter = (requestPacket => {
     return requestPacket.readUInt16BE(10)
@@ -117,7 +140,7 @@ export class ModbusTcpCommandFactory implements ModbusCommandFactory {
       case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
         return new PresetSingleRegisterCommand(packet, this._unitIdGetter,
           this._functionCodeGetter, this._packetCopySuccessGetter,
-          this._failureGetter, this._registerAddressGetter,
+          this._failureGetter, this._holdingRegisterAddressGetter,
           this._registerValueGetter)
       case ModbusFunctionCode.READ_COIL_STATUS:
         return new ReadCoilStatusCommand(packet, this._unitIdGetter,

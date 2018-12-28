@@ -8,25 +8,33 @@ import {
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand
 } from '../modbus-commands'
+import { ModbusCommandFactoryOptions } from '../modbus-command-factory'
 
-// TODO: Properly handle connection open, close, and packet boundaries
-
-interface ModbusTcpServerOptions {
+/**
+ * Options that only affect the server (timeouts, etc.) should go here,
+ * options that affect the commands being emitted should be added to the ModbusCommandFactoryOptions
+ */
+export interface ModbusTcpServerOptions extends ModbusCommandFactoryOptions {
 }
 
+// TODO: Properly handle connection open, close, and packet boundaries
 export class ModbusTcpServer extends ModbusServer {
   private _tcpServer: net.Server
-  private _eventFactory = new ModbusTcpCommandFactory()
+  private _commandFactory = new ModbusTcpCommandFactory()
+  private _options?: ModbusTcpServerOptions
 
   constructor(options?: ModbusTcpServerOptions) {
     super()
+
+    this._options = options
+    this._commandFactory = new ModbusTcpCommandFactory(options)
 
     this._tcpServer = net.createServer(socket => {
       const _this: ModbusTcpServer = this
 
       socket.on('data', data => {
         // Build object from packet
-        let command = this._eventFactory.fromPacket(data)
+        let command = this._commandFactory.fromPacket(data)
 
         // Listen for success or failure events being emitted from command object
         command.onComplete.once((command: ModbusCommand<any>) => {
