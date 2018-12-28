@@ -3,6 +3,7 @@ import { ModbusCommand } from './modbus-commands'
 export class ModbusCommandFactoryOptions {
 
   /**
+   * @default: true
    * If this option is set, the server will use 0 based coil, input status, and register addresses.
    * For instance, register 40001 will be 0, 40002 will be 1, etc.
    *
@@ -18,7 +19,6 @@ export class ModbusCommandFactoryOptions {
    * | Input Register   |   0    | 40001  |
    * | Input Register   |   1    | 40002  |
    * ```
-   * @default: true
    */
   simpleAddressing?: boolean
 

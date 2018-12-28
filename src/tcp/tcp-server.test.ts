@@ -2,7 +2,7 @@ const net = require('net')
 jest.mock('net')
 
 import { ModbusTcpServer, ModbusTcpServerOptions } from './modbus-tcp-server'
-import { PresetSingleRegisterCommand, ReadCoilStatusCommand } from '../modbus-commands'
+import { PresetSingleRegisterCommand, ReadCoilStatusCommand, ReadInputStatusCommand } from '../modbus-commands'
 
 describe('Server tests', () => {
 
@@ -115,6 +115,32 @@ describe('Server tests', () => {
     net.__socket.emit('data', Buffer.from(validCommandBytes))
   })
 
+  it('should emit a ReadInputStatusCommand and write a response', (done) => {
+    const validCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x02, 0x01, 0x10, 0x00, 0x16]
+
+    const inputStatuses = [
+      false, false, true, true, false, true, false, true,
+      true, true, false, true, true, false, true, true,
+      true, false, true, false, true, true
+    ]
+
+    const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x02, 0x03, 0xAC, 0xDB, 0x35]
+
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onReadInputStatus.on((command) => {
+      expect(command).toBeInstanceOf(ReadInputStatusCommand)
+      net.__socket.on('write', (data: any) => {
+        expect(data).toEqual(Buffer.from(validResponseBytes))
+        done()
+      })
+      command.success(inputStatuses)
+    })
+
+    net.__socket.emit('data', Buffer.from(validCommandBytes))
+  })
+
   // TODO: rewrite test names and test close and listen methods
+  // TODO: Test failures are properly emitted from the server
 
 })

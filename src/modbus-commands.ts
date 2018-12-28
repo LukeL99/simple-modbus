@@ -27,10 +27,12 @@ export enum ModbusCommandExcepton {
 
 export type UnitIdGetter = (requestPacket: Buffer) => number
 export type FunctionCodeGetter = (requestPacket: Buffer) => ModbusFunctionCode
-export type RegisterAddressGetter = (requestPacket: Buffer) => number
-export type RegisterValueGetter = (requestPacket: Buffer) => number
 export type CoilAddressGetter = (requestPacket: Buffer) => number
 export type CoilLengthGetter = (requestPacket: Buffer) => number
+export type InputAddressGetter = (requestPacket: Buffer) => number
+export type InputLengthGetter = (requestPacket: Buffer) => number
+export type RegisterAddressGetter = (requestPacket: Buffer) => number
+export type RegisterValueGetter = (requestPacket: Buffer) => number
 
 export type GenericSuccessGetter = (requestPacket: Buffer) => Buffer
 export type BoolArraySuccessGetter = (reqestPacket: Buffer, data: Array<boolean>) => Buffer
@@ -93,34 +95,6 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
 
 }
 
-export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegisterCommand> {
-  private readonly _registerAddressGetter: RegisterAddressGetter
-  private readonly _registerValueGetter: RegisterValueGetter
-
-  public get registerAddress() {
-    return this._registerAddressGetter(this._rawPacket)
-  }
-
-  public get registerValue() {
-    return this._registerValueGetter(this._rawPacket)
-  }
-
-  public success(): void {
-    this. _responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
-    this.onComplete.emit(this)
-    this.onSuccess.emit(this)
-  }
-
-  constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
-              successGetter: GenericSuccessGetter, failureGetter: FailureGetter,
-              registerAddressGetter: RegisterAddressGetter, registerValueGetter: RegisterValueGetter) {
-    super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
-    this._registerAddressGetter = registerAddressGetter
-    this._registerValueGetter = registerValueGetter
-  }
-
-}
-
 export class ReadCoilStatusCommand extends ModbusCommand<ReadCoilStatusCommand> {
 
   private readonly _coilAddressGetter: CoilAddressGetter
@@ -146,6 +120,63 @@ export class ReadCoilStatusCommand extends ModbusCommand<ReadCoilStatusCommand> 
     super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
     this._coilAddressGetter = coilAddressGetter
     this._coilLengthGetter = coilLengthGetter
+  }
+
+}
+
+export class ReadInputStatusCommand extends ModbusCommand<ReadInputStatusCommand> {
+
+  private readonly _inputAddressGetter: InputAddressGetter
+  private readonly _inputLengthGetter: InputLengthGetter
+
+  public get inputStartAddress() {
+    return this._inputAddressGetter(this._rawPacket)
+  }
+
+  public get numberOfInputs() {
+    return this._inputLengthGetter(this._rawPacket)
+  }
+
+  public success(data: Array<boolean>): void {
+    this. _responsePacket = (this._successGetter as BoolArraySuccessGetter)(this._rawPacket, data)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
+  }
+
+  constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
+              successGetter: BoolArraySuccessGetter, failureGetter: FailureGetter,
+              inputAddressGetter: InputAddressGetter, inputLengthGetter: InputLengthGetter) {
+    super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
+    this._inputAddressGetter = inputAddressGetter
+    this._inputLengthGetter = inputLengthGetter
+  }
+
+}
+
+export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegisterCommand> {
+  private readonly _registerAddressGetter: RegisterAddressGetter
+  private readonly _registerValueGetter: RegisterValueGetter
+
+  public get registerAddress() {
+    return this._registerAddressGetter(this._rawPacket)
+  }
+
+  public get registerValue() {
+    return this._registerValueGetter(this._rawPacket)
+  }
+
+  public success(): void {
+    this. _responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
+  }
+
+  constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
+              successGetter: GenericSuccessGetter, failureGetter: FailureGetter,
+              registerAddressGetter: RegisterAddressGetter, registerValueGetter: RegisterValueGetter) {
+    super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
+    this._registerAddressGetter = registerAddressGetter
+    this._registerValueGetter = registerValueGetter
   }
 
 }

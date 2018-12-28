@@ -6,7 +6,7 @@ import {
   ModbusCommand,
   ModbusFunctionCode,
   PresetSingleRegisterCommand,
-  ReadCoilStatusCommand
+  ReadCoilStatusCommand, ReadInputStatusCommand
 } from '../modbus-commands'
 import { ModbusCommandFactoryOptions } from '../modbus-command-factory'
 
@@ -48,6 +48,9 @@ export class ModbusTcpServer extends ModbusServer {
             break
           case ModbusFunctionCode.READ_COIL_STATUS:
             _this.onReadCoilStatus.emit(command as ReadCoilStatusCommand)
+            break
+          case ModbusFunctionCode.READ_INPUT_STATUS:
+            _this.onReadInputStatus.emit(command as ReadInputStatusCommand)
             break
         }
 
