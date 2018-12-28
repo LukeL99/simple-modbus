@@ -51,7 +51,7 @@ describe('Server tests', () => {
 
   })
 
-  it('should use simple addressing when option is blank', (done) => {
+  it('should use simple addressing when simpleAddressing is blank', (done) => {
     const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
     const server = new ModbusTcpServer().listen(502)
 
@@ -64,7 +64,7 @@ describe('Server tests', () => {
     net.__socket.emit('data', validRequest)
   })
 
-  it('should use simple addressing when option is true', (done) => {
+  it('should use simple addressing when simpleAddressing is true', (done) => {
     const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
     const server = new ModbusTcpServer({simpleAddressing: true}).listen(502)
 
@@ -77,7 +77,7 @@ describe('Server tests', () => {
     net.__socket.emit('data', validRequest)
   })
 
-  it('should use Modbus addressing when option is false', (done) => {
+  it('should use Modbus addressing when simpleAddressing is false', (done) => {
     const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
     const server = new ModbusTcpServer({simpleAddressing: false}).listen(502)
 
