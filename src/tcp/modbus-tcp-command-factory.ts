@@ -99,14 +99,6 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 40001
   })
 
-  // private _simepleHoldingRegisterAddressGetter: RegisterAddressGetter = (requestPacket => {
-  //   return requestPacket.readUInt16BE(8)
-  // })
-  //
-  // private _modbusHoldingRegisterAddressGetter: RegisterAddressGetter = (requestPacket => {
-  //   return requestPacket.readUInt16BE(8) + 40001
-  // })
-
   private _registerValueGetter: RegisterValueGetter = (requestPacket => {
     return requestPacket.readUInt16BE(10)
   })
@@ -114,14 +106,6 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
   private _coilAddressGetter: CoilAddressGetter = (requestPacket => {
     return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 1
   })
-
-  // private _simpleCoilAddressGetter: CoilAddressGetter = (requestPacket => {
-  //   return requestPacket.readUInt16BE(8)
-  // })
-  //
-  // private _modbusCoilAddressGetter: CoilAddressGetter = (requestPacket => {
-  //   return requestPacket.readUInt16BE(8) + 1
-  // })
 
   private _coilLengthGetter: CoilLengthGetter = (requestPacket => {
     return requestPacket.readUInt16BE(10)
