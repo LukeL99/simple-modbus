@@ -12,7 +12,7 @@ import { ModbusCommandFactoryOptions } from '../modbus-command-factory'
 
 /**
  * Options that only affect the server (timeouts, etc.) should go here,
- * options that affect the commands being emitted should be added to the ModbusCommandFactoryOptions
+ * options that affect the commands being emitted should be added to [ModbusCommandFactoryOptions](../classes/modbuscommandfactoryoptions.html)
  */
 export interface ModbusTcpServerOptions extends ModbusCommandFactoryOptions {
 }
