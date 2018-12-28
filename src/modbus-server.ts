@@ -15,10 +15,10 @@ import { TypedEvent } from './util/typed-event'
 /* istanbul ignore next */
 export abstract class ModbusServer {
 
-  public onPresetSingleRegister = new TypedEvent<PresetSingleRegisterCommand>()
-
   public onReadCoilStatus = new TypedEvent<ReadCoilStatusCommand>()
 
   public onReadInputStatus = new TypedEvent<ReadInputStatusCommand>()
+
+  public onPresetSingleRegister = new TypedEvent<PresetSingleRegisterCommand>()
 
 }
