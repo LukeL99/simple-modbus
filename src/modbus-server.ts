@@ -1,4 +1,9 @@
-import { PresetSingleRegisterCommand, ReadCoilStatusCommand, ReadInputStatusCommand } from './modbus-commands'
+import {
+  PresetSingleRegisterCommand,
+  ReadCoilStatusCommand,
+  ReadHoldingRegistersCommand,
+  ReadInputStatusCommand
+} from './modbus-commands'
 import { TypedEvent } from './util/typed-event'
 
 // export enum ModbusFunctionCode {
@@ -18,6 +23,8 @@ export abstract class ModbusServer {
   public onReadCoilStatus = new TypedEvent<ReadCoilStatusCommand>()
 
   public onReadInputStatus = new TypedEvent<ReadInputStatusCommand>()
+
+  public onReadHoldingRegisters = new TypedEvent<ReadHoldingRegistersCommand>()
 
   public onPresetSingleRegister = new TypedEvent<PresetSingleRegisterCommand>()
 

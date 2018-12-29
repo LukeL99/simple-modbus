@@ -5,9 +5,9 @@ import {
   FailureGetter,
   FunctionCodeGetter, GenericSuccessGetter, InputAddressGetter, InputLengthGetter,
   ModbusFunctionCode,
-  PresetSingleRegisterCommand, ReadCoilStatusCommand, ReadInputStatusCommand,
-  RegisterAddressGetter,
-  RegisterValueGetter,
+  PresetSingleRegisterCommand, ReadCoilStatusCommand, ReadHoldingRegistersCommand, ReadInputStatusCommand,
+  RegisterAddressGetter, RegisterLengthGetter,
+  RegisterValueGetter, Uint16ArraySuccessGetter,
   UnitIdGetter
 } from '../modbus-commands'
 import { ModbusCommandError } from '../error/modbus-errors'
@@ -32,7 +32,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
 
   private _packetCopySuccessGetter: GenericSuccessGetter = (requestPacket => Buffer.from(requestPacket))
 
-  private _readCoilSuccessGetter: BoolArraySuccessGetter = (requestPacket, data) => {
+  private static _stubTcpHeader(requestPacket: Buffer) {
     let response = []
 
     // First 2 bytes are the Transaction Identifier
@@ -48,6 +48,11 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
 
     // Copy Function Code from request
     response[7] = requestPacket.readUInt8(7)
+    return response
+  }
+
+  private _readCoilSuccessGetter: BoolArraySuccessGetter = (requestPacket, data) => {
+    let response = ModbusTcpCommandFactory._stubTcpHeader(requestPacket)
 
     // Calculate number of bytes with coil data in response
     const coilsRequested = this._coilLengthGetter(requestPacket)
@@ -71,21 +76,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
   }
 
   private _readInputStatusSuccessGetter: BoolArraySuccessGetter = (requestPacket, data) => {
-    let response = []
-
-    // First 2 bytes are the Transaction Identifier
-    response[0] = requestPacket.readUInt8(0)
-    response[1] = requestPacket.readUInt8(1)
-
-    // Next 2 bytes are protocol ID. These should always be 0x0000. But the protocol says to copy them from the request.
-    response[2] = requestPacket.readUInt8(2)
-    response[3] = requestPacket.readUInt8(3)
-
-    // Copy UnitId from request
-    response[6] = requestPacket.readUInt8(6)
-
-    // Copy Function Code from request
-    response[7] = requestPacket.readUInt8(7)
+    let response = ModbusTcpCommandFactory._stubTcpHeader(requestPacket)
 
     // Calculate number of bytes with coil data in response
     const inputsRequested = this._inputLengthGetter(requestPacket)
@@ -103,6 +94,26 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
       response[9 + i] = paddedData.slice(i * 8, 8 + (i * 8)).reduce(
         (accumulator, currentValue, currentIndex) => accumulator | ((currentValue ? 1 : 0) << currentIndex),
         0x00)
+    }
+
+    return Buffer.from(new Uint8Array(response))
+  }
+
+  private _readHoldingRegisterSuccessGetter: Uint16ArraySuccessGetter = (requestPacket, data) => {
+    let response = ModbusTcpCommandFactory._stubTcpHeader(requestPacket)
+
+    // Calculate number of bytes with coil data in response
+    const registersRequested = this._registerLengthGetter(requestPacket)
+    const byteLength = registersRequested * 2
+    response[8] = byteLength
+
+    // TCP byte length data
+    response[4] = (byteLength + 3) >> 8
+    response[5] = (byteLength + 3) & 0xFF
+
+    for (let i = 0; i < registersRequested; i++) {
+      response[9 + (i * 2)] = data[i] >> 8
+      response[10 + (i * 2)] = data[i] & 0xFF
     }
 
     return Buffer.from(new Uint8Array(response))
@@ -138,6 +149,10 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
   })
 
   private _registerValueGetter: RegisterValueGetter = (requestPacket => {
+    return requestPacket.readUInt16BE(10)
+  })
+
+  private _registerLengthGetter: RegisterLengthGetter = (requestPacket => {
     return requestPacket.readUInt16BE(10)
   })
 
@@ -177,6 +192,11 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._functionCodeGetter, this._readInputStatusSuccessGetter,
           this._failureGetter, this._inputAddressGetter,
           this._inputLengthGetter)
+      case ModbusFunctionCode.READ_HOLDING_REGISTERS:
+        return new ReadHoldingRegistersCommand(packet, this._unitIdGetter,
+          this._functionCodeGetter, this._readHoldingRegisterSuccessGetter,
+          this._failureGetter, this._holdingRegisterAddressGetter,
+          this._registerLengthGetter)
       case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
         return new PresetSingleRegisterCommand(packet, this._unitIdGetter,
           this._functionCodeGetter, this._packetCopySuccessGetter,

@@ -4,7 +4,7 @@ import { ModbusCommandError } from './error/modbus-errors'
 export enum ModbusFunctionCode {
   READ_COIL_STATUS = 0X01,
   READ_INPUT_STATUS = 0X02,
-  READ_HOLD_REGISTERS = 0X03,
+  READ_HOLDING_REGISTERS = 0X03,
   READ_INPUT_REGISTERS = 0X04,
   FORCE_SINGLE_COIL = 0X05,
   PRESET_SINGLE_REGISTER = 0X06,
@@ -33,10 +33,11 @@ export type InputAddressGetter = (requestPacket: Buffer) => number
 export type InputLengthGetter = (requestPacket: Buffer) => number
 export type RegisterAddressGetter = (requestPacket: Buffer) => number
 export type RegisterValueGetter = (requestPacket: Buffer) => number
+export type RegisterLengthGetter = (requestPacket: Buffer) => number
 
 export type GenericSuccessGetter = (requestPacket: Buffer) => Buffer
 export type BoolArraySuccessGetter = (reqestPacket: Buffer, data: Array<boolean>) => Buffer
-export type NumberArraySuccessGetter = (reqestPacket: Buffer, data: Array<number>) => Buffer
+export type Uint16ArraySuccessGetter = (requestPacket: Buffer, data: Uint16Array) => Buffer
 export type FailureGetter = (requestPacket: Buffer, exception: ModbusCommandExcepton) => Buffer
 
 export abstract class ModbusCommand<T extends ModbusCommand<any>> {
@@ -58,7 +59,7 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   protected _responsePacket?: Buffer
   protected readonly _unitIdGetter: UnitIdGetter
   protected readonly _functionCodeGetter: FunctionCodeGetter
-  protected readonly _successGetter: GenericSuccessGetter | BoolArraySuccessGetter | NumberArraySuccessGetter
+  protected readonly _successGetter: GenericSuccessGetter | BoolArraySuccessGetter | Uint16ArraySuccessGetter
   protected readonly _failureGetter: FailureGetter
 
   // If RTU, unitId is equivalent to slaveId
@@ -78,7 +79,7 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   }
 
   protected constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
-                        successGetter: GenericSuccessGetter | BoolArraySuccessGetter | NumberArraySuccessGetter,
+                        successGetter: GenericSuccessGetter | BoolArraySuccessGetter | Uint16ArraySuccessGetter,
                         failureGetter: FailureGetter) {
     this._rawPacket = rawPacket
     this._unitIdGetter = unitIdGetter
@@ -109,6 +110,7 @@ export class ReadCoilStatusCommand extends ModbusCommand<ReadCoilStatusCommand> 
   }
 
   public success(data: Array<boolean>): void {
+    // TODO: Throw error here if data length doesn't equal requested length
     this. _responsePacket = (this._successGetter as BoolArraySuccessGetter)(this._rawPacket, data)
     this.onComplete.emit(this)
     this.onSuccess.emit(this)
@@ -138,6 +140,7 @@ export class ReadInputStatusCommand extends ModbusCommand<ReadInputStatusCommand
   }
 
   public success(data: Array<boolean>): void {
+    // TODO: Throw error here if data length doesn't equal requested length
     this. _responsePacket = (this._successGetter as BoolArraySuccessGetter)(this._rawPacket, data)
     this.onComplete.emit(this)
     this.onSuccess.emit(this)
@@ -151,6 +154,35 @@ export class ReadInputStatusCommand extends ModbusCommand<ReadInputStatusCommand
     this._inputLengthGetter = inputLengthGetter
   }
 
+}
+
+
+export class ReadHoldingRegistersCommand extends ModbusCommand<ReadHoldingRegistersCommand> {
+  private readonly _registerAddressGetter: RegisterAddressGetter
+  private readonly _registerLengthGetter: RegisterLengthGetter
+
+  public get registerStartAddress() {
+    return this._registerAddressGetter(this._rawPacket)
+  }
+
+  public get registerLength() {
+    return this._registerLengthGetter(this._rawPacket)
+  }
+
+  public success(data: Uint16Array): void {
+    // TODO: Throw error here if data length doesn't equal requested length
+    this. _responsePacket = (this._successGetter as Uint16ArraySuccessGetter)(this._rawPacket, data)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
+  }
+
+  constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
+              successGetter: Uint16ArraySuccessGetter, failureGetter: FailureGetter,
+              registerAddressGetter: RegisterAddressGetter, registerLengthGetter: RegisterLengthGetter) {
+    super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
+    this._registerAddressGetter = registerAddressGetter
+    this._registerLengthGetter = registerLengthGetter
+  }
 }
 
 export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegisterCommand> {

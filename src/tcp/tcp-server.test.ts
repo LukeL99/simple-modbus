@@ -2,7 +2,12 @@ const net = require('net')
 jest.mock('net')
 
 import { ModbusTcpServer, ModbusTcpServerOptions } from './modbus-tcp-server'
-import { PresetSingleRegisterCommand, ReadCoilStatusCommand, ReadInputStatusCommand } from '../modbus-commands'
+import {
+  PresetSingleRegisterCommand,
+  ReadCoilStatusCommand,
+  ReadHoldingRegistersCommand,
+  ReadInputStatusCommand
+} from '../modbus-commands'
 
 describe('Server tests', () => {
 
@@ -16,23 +21,6 @@ describe('Server tests', () => {
     expect(server).toBeInstanceOf(ModbusTcpServer)
   })
 
-  it('should emit a PresetSingleRegisterCommand and write a response', (done) => {
-    const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
-    const validResponse = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
-    const server = new ModbusTcpServer().listen(502)
-
-    server.onPresetSingleRegister.on((command) => {
-      expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
-      net.__socket.on('write', (data: any) => {
-        expect(data).toEqual(validResponse)
-        done()
-      })
-      command.success()
-    })
-
-    net.__socket.emit('data', validRequest)
-  })
-
   it('should correctly pass options to command factory', () => {
     let server: any = new ModbusTcpServer();
     expect(server._commandFactory._options).toBeUndefined()
@@ -41,11 +29,11 @@ describe('Server tests', () => {
     server = new ModbusTcpServer(options);
     expect(server._commandFactory._options).toEqual(options)
 
-    options = {simpleAddressing: false}
+    options = { simpleAddressing: false }
     server = new ModbusTcpServer(options);
     expect(server._commandFactory._options).toEqual(options)
 
-    options = {simpleAddressing: true}
+    options = { simpleAddressing: true }
     server = new ModbusTcpServer(options);
     expect(server._commandFactory._options).toEqual(options)
 
@@ -66,7 +54,7 @@ describe('Server tests', () => {
 
   it('should use simple addressing when simpleAddressing is true', (done) => {
     const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
-    const server = new ModbusTcpServer({simpleAddressing: true}).listen(502)
+    const server = new ModbusTcpServer({ simpleAddressing: true }).listen(502)
 
     server.onPresetSingleRegister.on((command) => {
       expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
@@ -79,7 +67,7 @@ describe('Server tests', () => {
 
   it('should use Modbus addressing when simpleAddressing is false', (done) => {
     const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
-    const server = new ModbusTcpServer({simpleAddressing: false}).listen(502)
+    const server = new ModbusTcpServer({ simpleAddressing: false }).listen(502)
 
     server.onPresetSingleRegister.on((command) => {
       expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
@@ -88,6 +76,15 @@ describe('Server tests', () => {
     })
 
     net.__socket.emit('data', validRequest)
+  })
+
+})
+
+describe('Server command tests', () =>{
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    net.__reset()
   })
 
   it('should emit a ReadCoilStatusCommand and write a response', (done) => {
@@ -138,6 +135,45 @@ describe('Server tests', () => {
     })
 
     net.__socket.emit('data', Buffer.from(validCommandBytes))
+  })
+
+  it('should emit a ReadHoldingRegistersCommand and write a response', (done) => {
+
+    const validCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x03, 0x01, 0x10, 0x00, 0x03]
+
+    const registerValues = new Uint16Array([0xAE41, 0x5652, 0x4340])
+
+    const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x09, 0x05, 0x03, 0x06, 0xAE, 0x41, 0x56, 0x52, 0x43, 0x40]
+
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onReadHoldingRegisters.on((command) => {
+      expect(command).toBeInstanceOf(ReadHoldingRegistersCommand)
+      net.__socket.on('write', (data: any) => {
+        expect(data).toEqual(Buffer.from(validResponseBytes))
+        done()
+      })
+      command.success(registerValues)
+    })
+
+    net.__socket.emit('data', Buffer.from(validCommandBytes))
+  })
+
+  it('should emit a PresetSingleRegisterCommand and write a response', (done) => {
+    const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
+    const validResponse = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onPresetSingleRegister.on((command) => {
+      expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
+      net.__socket.on('write', (data: any) => {
+        expect(data).toEqual(validResponse)
+        done()
+      })
+      command.success()
+    })
+
+    net.__socket.emit('data', validRequest)
   })
 
   // TODO: rewrite test names and test close and listen methods

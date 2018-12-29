@@ -6,7 +6,7 @@ import {
   ModbusCommand,
   ModbusFunctionCode,
   PresetSingleRegisterCommand,
-  ReadCoilStatusCommand, ReadInputStatusCommand
+  ReadCoilStatusCommand, ReadHoldingRegistersCommand, ReadInputStatusCommand
 } from '../modbus-commands'
 import { ModbusCommandFactoryOptions } from '../modbus-command-factory'
 
@@ -43,14 +43,17 @@ export class ModbusTcpServer extends ModbusServer {
 
         // Determine packet type and emit corresponding event type
         switch (command.functionCode) {
-          case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
-            _this.onPresetSingleRegister.emit(command as PresetSingleRegisterCommand)
-            break
           case ModbusFunctionCode.READ_COIL_STATUS:
             _this.onReadCoilStatus.emit(command as ReadCoilStatusCommand)
             break
           case ModbusFunctionCode.READ_INPUT_STATUS:
             _this.onReadInputStatus.emit(command as ReadInputStatusCommand)
+            break
+          case ModbusFunctionCode.READ_HOLDING_REGISTERS:
+            _this.onReadHoldingRegisters.emit(command as ReadHoldingRegistersCommand)
+            break
+          case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
+            _this.onPresetSingleRegister.emit(command as PresetSingleRegisterCommand)
             break
         }
 
