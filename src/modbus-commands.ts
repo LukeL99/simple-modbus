@@ -185,6 +185,34 @@ export class ReadHoldingRegistersCommand extends ModbusCommand<ReadHoldingRegist
   }
 }
 
+export class ReadInputRegistersCommand extends ModbusCommand<ReadInputRegistersCommand> {
+  private readonly _registerAddressGetter: RegisterAddressGetter
+  private readonly _registerLengthGetter: RegisterLengthGetter
+
+  public get registerStartAddress() {
+    return this._registerAddressGetter(this._rawPacket)
+  }
+
+  public get registerLength() {
+    return this._registerLengthGetter(this._rawPacket)
+  }
+
+  public success(data: Uint16Array): void {
+    // TODO: Throw error here if data length doesn't equal requested length
+    this. _responsePacket = (this._successGetter as Uint16ArraySuccessGetter)(this._rawPacket, data)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
+  }
+
+  constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
+              successGetter: Uint16ArraySuccessGetter, failureGetter: FailureGetter,
+              registerAddressGetter: RegisterAddressGetter, registerLengthGetter: RegisterLengthGetter) {
+    super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
+    this._registerAddressGetter = registerAddressGetter
+    this._registerLengthGetter = registerLengthGetter
+  }
+}
+
 export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegisterCommand> {
   private readonly _registerAddressGetter: RegisterAddressGetter
   private readonly _registerValueGetter: RegisterValueGetter

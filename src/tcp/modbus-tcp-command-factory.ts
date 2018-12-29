@@ -3,11 +3,20 @@ import {
   CoilAddressGetter,
   CoilLengthGetter,
   FailureGetter,
-  FunctionCodeGetter, GenericSuccessGetter, InputAddressGetter, InputLengthGetter,
+  FunctionCodeGetter,
+  GenericSuccessGetter,
+  InputAddressGetter,
+  InputLengthGetter,
   ModbusFunctionCode,
-  PresetSingleRegisterCommand, ReadCoilStatusCommand, ReadHoldingRegistersCommand, ReadInputStatusCommand,
-  RegisterAddressGetter, RegisterLengthGetter,
-  RegisterValueGetter, Uint16ArraySuccessGetter,
+  PresetSingleRegisterCommand,
+  ReadCoilStatusCommand,
+  ReadHoldingRegistersCommand,
+  ReadInputRegistersCommand,
+  ReadInputStatusCommand,
+  RegisterAddressGetter,
+  RegisterLengthGetter,
+  RegisterValueGetter,
+  Uint16ArraySuccessGetter,
   UnitIdGetter
 } from '../modbus-commands'
 import { ModbusCommandError } from '../error/modbus-errors'
@@ -99,7 +108,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     return Buffer.from(new Uint8Array(response))
   }
 
-  private _readHoldingRegisterSuccessGetter: Uint16ArraySuccessGetter = (requestPacket, data) => {
+  private _readRegistersSuccessGetter: Uint16ArraySuccessGetter = (requestPacket, data) => {
     let response = ModbusTcpCommandFactory._stubTcpHeader(requestPacket)
 
     // Calculate number of bytes with coil data in response
@@ -148,6 +157,10 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 40001
   })
 
+  private _inputRegisterAddressGetter: RegisterAddressGetter = (requestPacket => {
+    return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 30001
+  })
+
   private _registerValueGetter: RegisterValueGetter = (requestPacket => {
     return requestPacket.readUInt16BE(10)
   })
@@ -194,8 +207,13 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._inputLengthGetter)
       case ModbusFunctionCode.READ_HOLDING_REGISTERS:
         return new ReadHoldingRegistersCommand(packet, this._unitIdGetter,
-          this._functionCodeGetter, this._readHoldingRegisterSuccessGetter,
+          this._functionCodeGetter, this._readRegistersSuccessGetter,
           this._failureGetter, this._holdingRegisterAddressGetter,
+          this._registerLengthGetter)
+      case ModbusFunctionCode.READ_INPUT_REGISTERS:
+        return new ReadInputRegistersCommand(packet, this._unitIdGetter,
+          this._functionCodeGetter, this._readRegistersSuccessGetter,
+          this._failureGetter, this._inputRegisterAddressGetter,
           this._registerLengthGetter)
       case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
         return new PresetSingleRegisterCommand(packet, this._unitIdGetter,

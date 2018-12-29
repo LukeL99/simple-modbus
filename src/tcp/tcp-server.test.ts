@@ -5,7 +5,7 @@ import { ModbusTcpServer, ModbusTcpServerOptions } from './modbus-tcp-server'
 import {
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand,
-  ReadHoldingRegistersCommand,
+  ReadHoldingRegistersCommand, ReadInputRegistersCommand,
   ReadInputStatusCommand
 } from '../modbus-commands'
 
@@ -149,6 +149,28 @@ describe('Server command tests', () =>{
 
     server.onReadHoldingRegisters.on((command) => {
       expect(command).toBeInstanceOf(ReadHoldingRegistersCommand)
+      net.__socket.on('write', (data: any) => {
+        expect(data).toEqual(Buffer.from(validResponseBytes))
+        done()
+      })
+      command.success(registerValues)
+    })
+
+    net.__socket.emit('data', Buffer.from(validCommandBytes))
+  })
+
+  it('should emit a ReadInputRegistersCommand and write a response', (done) => {
+
+    const validCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x04, 0x01, 0x10, 0x00, 0x03]
+
+    const registerValues = new Uint16Array([0xAE41, 0x5652, 0x4340])
+
+    const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x09, 0x05, 0x04, 0x06, 0xAE, 0x41, 0x56, 0x52, 0x43, 0x40]
+
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onReadInputRegisters.on((command) => {
+      expect(command).toBeInstanceOf(ReadInputRegistersCommand)
       net.__socket.on('write', (data: any) => {
         expect(data).toEqual(Buffer.from(validResponseBytes))
         done()

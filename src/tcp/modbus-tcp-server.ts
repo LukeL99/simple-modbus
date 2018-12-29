@@ -6,7 +6,7 @@ import {
   ModbusCommand,
   ModbusFunctionCode,
   PresetSingleRegisterCommand,
-  ReadCoilStatusCommand, ReadHoldingRegistersCommand, ReadInputStatusCommand
+  ReadCoilStatusCommand, ReadHoldingRegistersCommand, ReadInputRegistersCommand, ReadInputStatusCommand
 } from '../modbus-commands'
 import { ModbusCommandFactoryOptions } from '../modbus-command-factory'
 
@@ -34,6 +34,7 @@ export class ModbusTcpServer extends ModbusServer {
 
       socket.on('data', data => {
         // Build object from packet
+        // TODO: Wrap this in try/catch, emit errors from malformed packets
         let command = this._commandFactory.fromPacket(data)
 
         // Listen for success or failure events being emitted from command object
@@ -51,6 +52,9 @@ export class ModbusTcpServer extends ModbusServer {
             break
           case ModbusFunctionCode.READ_HOLDING_REGISTERS:
             _this.onReadHoldingRegisters.emit(command as ReadHoldingRegistersCommand)
+            break
+          case ModbusFunctionCode.READ_INPUT_REGISTERS:
+            _this.onReadInputRegisters.emit(command as ReadInputRegistersCommand)
             break
           case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
             _this.onPresetSingleRegister.emit(command as PresetSingleRegisterCommand)
