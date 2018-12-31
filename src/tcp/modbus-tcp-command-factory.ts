@@ -198,7 +198,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     } else if (value === 0x0000) {
       return false
     }
-    return undefined
+    throw new Error('_coilStatusGetter invalid value')
   })
 
   private _coilStatusesGetter: CoilStatusesGetter = requestPacket => {
@@ -208,7 +208,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
 
     if (byteLength !== packetByteLength || requestPacket.length !== byteLength + 13) {
       // Malformed packet, check and throw exception
-      return undefined
+      throw new Error('_coilStatusesGetter invalid length')
     }
 
     const coilArray = new Array<boolean>(byteLength * 8)
@@ -228,7 +228,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
 
     if (byteLength !== packetByteLength || requestPacket.length !== byteLength + 13) {
       // Malformed packet, check and throw exception
-      return undefined
+      throw new Error('_registerValuesGetter invalidValue')
     }
 
     const registerArray = new Array<number>(registerLength)
@@ -277,7 +277,9 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._failureGetter, this._inputRegisterAddressGetter,
           this._registerLengthGetter)
       case ModbusFunctionCode.FORCE_SINGLE_COIL:
-        if (this._coilStatusGetter(packet) === undefined) {
+        try {
+          this._coilStatusGetter(packet)
+        } catch {
           throw new ModbusCommandError('FORCE_SINGLE_COIL - Invalid coil status received.', packet)
         }
         return new ForceSingleCoilCommand(packet, this._unitIdGetter,
@@ -290,7 +292,9 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._failureGetter, this._holdingRegisterAddressGetter,
           this._registerValueGetter)
       case ModbusFunctionCode.FORCE_MULTIPLE_COILS:
-        if (this._coilStatusesGetter(packet) === undefined) {
+        try {
+          this._coilStatusesGetter(packet)
+        } catch {
           throw new ModbusCommandError('FORCE_MULTIPLE_COILS - Invalid coil status command received', packet)
         }
         return new ForceMultipleCoilsCommand(packet, this._unitIdGetter,
@@ -298,7 +302,9 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._failureGetter, this._coilAddressGetter,
           this._coilLengthGetter, this._coilStatusesGetter)
       case ModbusFunctionCode.PRESET_MULTIPLE_REGISTERS:
-        if (this._registerValuesGetter(packet) === undefined) {
+        try {
+          this._registerValuesGetter(packet)
+        } catch {
           throw new ModbusCommandError('PRESET_MULTIPLE_REGISTERS - Invalid register command received', packet)
         }
         return new PresetMultipleRegistersCommand(packet, this._unitIdGetter,

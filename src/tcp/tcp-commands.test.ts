@@ -1,4 +1,5 @@
 import {
+  CoilStatus,
   ForceMultipleCoilsCommand,
   ForceSingleCoilCommand,
   ModbusCommand,
@@ -24,7 +25,7 @@ describe('ReadCoilStatusCommand tests', () => {
   // 10-11 = Number of coils to read (0x0025 = 37)
   const validCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x01, 0x01, 0x10, 0x00, 0x25]
 
-  const coilValues = [
+  const coilStatuses = [
     true, false, true, true, false, false, true, true,
     true, true, false, true, false, true, true, false,
     false, true, false, false, true, true, false, true,
@@ -83,7 +84,7 @@ describe('ReadCoilStatusCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(validResponseBytes))
       done()
     })
-    command.success(coilValues)
+    command.success(coilStatuses)
   })
 
   it('should emit a success response on success', done => {
@@ -93,7 +94,7 @@ describe('ReadCoilStatusCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(validResponseBytes))
       done()
     })
-    command.success(coilValues)
+    command.success(coilStatuses)
   })
 
   it('should emit a complete response on failure', done => {
@@ -615,16 +616,28 @@ describe('ForceSingleCoilCommand tests', () => {
     expect(command.unitId).toEqual(0x05)
   })
 
-  it('should return coil ON status', () => {
+  it('should return coil ON status (boolean)', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
     const command = (commandFactory.fromPacket(Buffer.from(coilOnBytes)) as ForceSingleCoilCommand)
     expect(command.coilStatus).toEqual(true)
   })
 
-  it('should return coil OFF status', () => {
+  it('should return coil OFF status (boolean)', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
     const command = (commandFactory.fromPacket(Buffer.from(coilOffBytes)) as ForceSingleCoilCommand)
     expect(command.coilStatus).toEqual(false)
+  })
+
+  it('should return coil ON status (enum)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(coilOnBytes)) as ForceSingleCoilCommand)
+    expect(command.coilStatusAsCoilStatus).toEqual(CoilStatus.ON)
+  })
+
+  it('should return coil OFF status (enum)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(coilOffBytes)) as ForceSingleCoilCommand)
+    expect(command.coilStatusAsCoilStatus).toEqual(CoilStatus.OFF)
   })
 
   it('should throw on an invalid coil status', () => {
@@ -701,7 +714,8 @@ describe('ForceMultipleCoilsCommand tests', () => {
   const invalidRequestBytes2 = [0x00, 0x01, 0x00, 0x00, 0x00, 0x09, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A, 0x02, 0xCD, 0x01, 0x00]
   const invalidRequestBytes3 = [0x00, 0x01, 0x00, 0x00, 0x00, 0x09, 0x05, 0x0F, 0x01, 0x10, 0x00, 0xFF, 0x02, 0xCD, 0x01]
 
-  const coilValues = [true, false, true, true, false, false, true, true, true, false]
+  const coilStatuses = [true, false, true, true, false, false, true, true, true, false]
+  const coilStatusesEnum = [CoilStatus.ON, CoilStatus.OFF, CoilStatus.ON, CoilStatus.ON, CoilStatus.OFF, CoilStatus.OFF, CoilStatus.ON, CoilStatus.ON, CoilStatus.ON, CoilStatus.OFF]
 
   const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A]
 
@@ -737,10 +751,16 @@ describe('ForceMultipleCoilsCommand tests', () => {
     expect(command.coilStartAddress).toEqual(273)
   })
 
-  it('should return requested coil statuses', () => {
+  it('should return requested coil statuses (boolean)', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
     const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as ForceMultipleCoilsCommand)
-    expect(command.coilValues).toEqual(coilValues)
+    expect(command.coilStatuses).toEqual(coilStatuses)
+  })
+
+  it('should return requested coil statuses (enum)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as ForceMultipleCoilsCommand)
+    expect(command.coilStatusesAsCoilStatusArray).toEqual(coilStatusesEnum)
   })
 
   it('should return correct coil length', () => {
@@ -838,6 +858,7 @@ describe('PresetMultipleRegistersCommand tests', () => {
   const invalidRequestBytes3 = [0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x05, 0x10, 0x01, 0x10, 0x00, 0x03, 0x04, 0x00, 0x0A, 0x01, 0x02]
 
   const registerValues = [0x000A, 0x0102]
+  const registerValuesUint16 = Uint16Array.from([0x000A, 0x0102])
 
   const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x10, 0x01, 0x10, 0x00, 0x02]
 
@@ -873,10 +894,16 @@ describe('PresetMultipleRegistersCommand tests', () => {
     expect(command.registerStartAddress).toEqual(40273)
   })
 
-  it('should return requested register statuses', () => {
+  it('should return requested register values (number)', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
     const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
     expect(command.registerValues).toEqual(registerValues)
+  })
+
+  it('should return requested register values (Uint16Array)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
+    expect(command.registerValuesAsUint16Array).toEqual(registerValuesUint16)
   })
 
   it('should return correct register length', () => {

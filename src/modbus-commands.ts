@@ -25,17 +25,22 @@ export enum ModbusCommandExcepton {
   GATEWAY_TARGET_FAILED_TO_RESPOND = 0X0B
 }
 
+export enum CoilStatus {
+  ON,
+  OFF
+}
+
 export type UnitIdGetter = (requestPacket: Buffer) => number
 export type FunctionCodeGetter = (requestPacket: Buffer) => ModbusFunctionCode
 export type CoilAddressGetter = (requestPacket: Buffer) => number
 export type CoilLengthGetter = (requestPacket: Buffer) => number
-export type CoilStatusGetter = (requestPacket: Buffer) => boolean | undefined
-export type CoilStatusesGetter = (requestPacket: Buffer) => Array<boolean> | undefined
+export type CoilStatusGetter = (requestPacket: Buffer) => boolean
+export type CoilStatusesGetter = (requestPacket: Buffer) => Array<boolean>
 export type InputAddressGetter = (requestPacket: Buffer) => number
 export type InputLengthGetter = (requestPacket: Buffer) => number
 export type RegisterAddressGetter = (requestPacket: Buffer) => number
 export type RegisterValueGetter = (requestPacket: Buffer) => number
-export type RegisterValuesGetter = (requestPacket: Buffer) => Array<number> | undefined
+export type RegisterValuesGetter = (requestPacket: Buffer) => Array<number>
 export type RegisterLengthGetter = (requestPacket: Buffer) => number
 
 export type GenericSuccessGetter = (requestPacket: Buffer, length?: number) => Buffer
@@ -264,6 +269,10 @@ export class ForceSingleCoilCommand extends ModbusCommand<ForceSingleCoilCommand
     return this._coilStatusGetter(this._rawPacket)
   }
 
+  public get coilStatusAsCoilStatus() {
+    return (this.coilStatus === true) ? CoilStatus.ON : CoilStatus.OFF
+  }
+
   /**
    * Set success on this command to return a valid response to the emitting server.
    */
@@ -325,8 +334,12 @@ export class ForceMultipleCoilsCommand extends ModbusCommand<ForceMultipleCoilsC
     return this._coilLengthGetter(this._rawPacket)
   }
 
-  public get coilValues() {
+  public get coilStatuses() {
     return this._coilStatusesGetter(this._rawPacket)
+  }
+
+  public get coilStatusesAsCoilStatusArray() {
+    return this.coilStatuses.map(x => (x === true) ? CoilStatus.ON : CoilStatus.OFF)
   }
 
   /**
@@ -364,6 +377,10 @@ export class PresetMultipleRegistersCommand extends ModbusCommand<PresetMultiple
 
   public get registerValues() {
     return this._registerValuesGetter(this._rawPacket)
+  }
+
+  public get registerValuesAsUint16Array() {
+    return new Uint16Array(this.registerValues)
   }
 
   /**

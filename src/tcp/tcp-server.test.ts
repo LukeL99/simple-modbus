@@ -241,7 +241,7 @@ describe('Server command tests', () =>{
 
     server.onForceMultipleCoils.on((command) => {
       expect(command).toBeInstanceOf(ForceMultipleCoilsCommand)
-      expect(command.coilValues).toEqual(coilValues)
+      expect(command.coilStatuses).toEqual(coilValues)
       net.__socket.on('write', (data: any) => {
         expect(data).toEqual(Buffer.from(validResponseBytes))
         done()
