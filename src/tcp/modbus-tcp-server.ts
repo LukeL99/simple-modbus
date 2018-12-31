@@ -3,6 +3,7 @@ import '../util/typed-event'
 import { ModbusServer } from '../modbus-server'
 import { ModbusTcpCommandFactory } from './modbus-tcp-command-factory'
 import {
+  ForceMultipleCoilsCommand,
   ForceSingleCoilCommand,
   ModbusCommand,
   ModbusFunctionCode,
@@ -62,6 +63,9 @@ export class ModbusTcpServer extends ModbusServer {
             break
           case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
             _this.onPresetSingleRegister.emit(command as PresetSingleRegisterCommand)
+            break
+          case ModbusFunctionCode.FORCE_MULTIPLE_COILS:
+            _this.onForceMultipleCoils.emit(command as ForceMultipleCoilsCommand)
             break
         }
 

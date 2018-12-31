@@ -1,8 +1,8 @@
 import {
   BoolArraySuccessGetter,
   CoilAddressGetter,
-  CoilLengthGetter, CoilStatusGetter,
-  FailureGetter, ForceSingleCoilCommand,
+  CoilLengthGetter, CoilStatusesGetter, CoilStatusGetter,
+  FailureGetter, ForceMultipleCoilsCommand, ForceSingleCoilCommand,
   FunctionCodeGetter,
   GenericSuccessGetter,
   InputAddressGetter,
@@ -40,6 +40,13 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
   })
 
   private _packetCopySuccessGetter: GenericSuccessGetter = (requestPacket => Buffer.from(requestPacket))
+
+  private _forceMultipleCoilsSuccessGetter: GenericSuccessGetter = (requestPacket => {
+    const response = Array.from(requestPacket).slice(0, 12)
+    response[4] = 0x00
+    response[5] = 0x06
+    return Buffer.from(response)
+  })
 
   private static _stubTcpHeader(requestPacket: Buffer) {
     let response = []
@@ -187,6 +194,26 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     return undefined
   })
 
+  private _coilStatusesGetter: CoilStatusesGetter = requestPacket => {
+    const coilLength = this._coilLengthGetter(requestPacket)
+    const byteLength = Math.ceil(coilLength / 8.0)
+    const packetByteLength = requestPacket.readUInt8(12)
+
+    if (byteLength !== packetByteLength || requestPacket.length !== byteLength + 13) {
+      // Malformed packet, check and throw exception
+      return undefined
+    }
+
+    const coilArray = new Array<boolean>(byteLength * 8)
+    for (let i = 0; i < byteLength; i++) {
+      let byteVal = requestPacket.readUInt8(13 + i)
+      for (let j = 0; j < 8; j++) {
+        coilArray[(i * 8) + j] = ((byteVal >> j) & 0x01) === 1
+      }
+    }
+    return coilArray.slice(0, coilLength)
+  }
+
   private _inputAddressGetter: InputAddressGetter = (requestPacket => {
     return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 10001
   })
@@ -227,7 +254,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._registerLengthGetter)
       case ModbusFunctionCode.FORCE_SINGLE_COIL:
         if (this._coilStatusGetter(packet) === undefined) {
-          throw new ModbusCommandError('Invalid coil status received.')
+          throw new ModbusCommandError('FORCE_SINGLE_COIL - Invalid coil status received.')
         }
         return new ForceSingleCoilCommand(packet, this._unitIdGetter,
           this._functionCodeGetter, this._packetCopySuccessGetter,
@@ -238,6 +265,14 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._functionCodeGetter, this._packetCopySuccessGetter,
           this._failureGetter, this._holdingRegisterAddressGetter,
           this._registerValueGetter)
+      case ModbusFunctionCode.FORCE_MULTIPLE_COILS:
+        if(this._coilStatusesGetter(packet) === undefined){
+          throw new ModbusCommandError('FORCE_MULTIPLE_COILS - Invalid coil status command received')
+        }
+        return new ForceMultipleCoilsCommand(packet, this._unitIdGetter,
+          this._functionCodeGetter, this._forceMultipleCoilsSuccessGetter,
+          this._failureGetter, this._coilAddressGetter,
+          this._coilLengthGetter, this._coilStatusesGetter)
       default:
         throw new ModbusCommandError('Function code not implemented')
     }

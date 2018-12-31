@@ -3,6 +3,7 @@ jest.mock('net')
 
 import { ModbusTcpServer, ModbusTcpServerOptions } from './modbus-tcp-server'
 import {
+  ForceMultipleCoilsCommand,
   ForceSingleCoilCommand,
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand,
@@ -199,9 +200,44 @@ describe('Server command tests', () =>{
     net.__socket.emit('data', Buffer.from(coilOnBytes))
   })
 
+  // TODO:
   // it('should emit an error when invalid ForceSingleCoilCommand is sent', (done) => {
   //   const coilFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x05, 0x01, 0x10, 0x11, 0x11]
   //
+  //   const server = new ModbusTcpServer().listen(502)
+  //
+  //   server.onCommandError.on(() => {
+  //     // Test here!
+  //   })
+  //
+  //   net.__socket.emit('data', Buffer.from(coilFailBytes))
+  // })
+
+  it('should emit a ForceMultipleCoilsCommand and write a response', (done) => {
+    const validRequestBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A, 0x02, 0xCD, 0x01]
+
+    const coilStatuses = [true, false, true, true, false, false, true, true, true, false]
+
+    const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A]
+
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onForceMultipleCoils.on((command) => {
+      expect(command).toBeInstanceOf(ForceMultipleCoilsCommand)
+      expect(command.coilStatuses).toEqual(coilStatuses)
+      net.__socket.on('write', (data: any) => {
+        expect(data).toEqual(Buffer.from(validResponseBytes))
+        done()
+      })
+      command.success()
+    })
+
+    net.__socket.emit('data', Buffer.from(validRequestBytes))
+  })
+
+  // TODO:
+  // it('should emit an error when invalid ForceMultipleCoilsCommand is sent', (done) => {
+  //   const coilFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A, 0x03, 0xCD, 0x01]
   //   const server = new ModbusTcpServer().listen(502)
   //
   //   server.onCommandError.on(() => {
