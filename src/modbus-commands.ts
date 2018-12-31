@@ -87,7 +87,7 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
    */
   public get responsePacket(): Buffer {
     if (!this._responsePacket) {
-      throw new ModbusCommandError('Tried to read response packet, but success or fail has not been called.')
+      throw new ModbusCommandError('Tried to read response packet, but success or fail has not been called.', this._rawPacket)
     }
     return this._responsePacket
   }

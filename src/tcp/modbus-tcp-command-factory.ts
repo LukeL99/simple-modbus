@@ -225,7 +225,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
   public fromPacket(packet: Buffer) {
     // Minimum Modbus TCP request packet size is 12
     if (packet.length < 12) {
-      throw new ModbusCommandError('Packet length too short')
+      throw new ModbusCommandError('Packet length too short', packet)
     }
 
     const fc = this._functionCodeGetter(packet)
@@ -254,7 +254,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._registerLengthGetter)
       case ModbusFunctionCode.FORCE_SINGLE_COIL:
         if (this._coilStatusGetter(packet) === undefined) {
-          throw new ModbusCommandError('FORCE_SINGLE_COIL - Invalid coil status received.')
+          throw new ModbusCommandError('FORCE_SINGLE_COIL - Invalid coil status received.', packet)
         }
         return new ForceSingleCoilCommand(packet, this._unitIdGetter,
           this._functionCodeGetter, this._packetCopySuccessGetter,
@@ -267,14 +267,14 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._registerValueGetter)
       case ModbusFunctionCode.FORCE_MULTIPLE_COILS:
         if(this._coilStatusesGetter(packet) === undefined){
-          throw new ModbusCommandError('FORCE_MULTIPLE_COILS - Invalid coil status command received')
+          throw new ModbusCommandError('FORCE_MULTIPLE_COILS - Invalid coil status command received', packet)
         }
         return new ForceMultipleCoilsCommand(packet, this._unitIdGetter,
           this._functionCodeGetter, this._forceMultipleCoilsSuccessGetter,
           this._failureGetter, this._coilAddressGetter,
           this._coilLengthGetter, this._coilStatusesGetter)
       default:
-        throw new ModbusCommandError('Function code not implemented')
+        throw new ModbusCommandError('Function code not implemented', packet)
     }
   }
 

@@ -17,13 +17,16 @@ export class ModbusServerError extends Error {
 
 export class ModbusCommandError extends Error {
 
+  public readonly requestBytes?: Buffer
+
   // Impossible to get Jest to see super branch as covered, have to ignore whole constructor
   /* istanbul ignore next */
-  constructor(public message: string) {
+  constructor(public message: string, requestBytes?: Buffer) {
     super(message)
     this.name = 'ModbusCommandError'
     this.message = message
     this.stack = (new Error()).stack
+    this.requestBytes = requestBytes
     Object.setPrototypeOf(this, ModbusCommandError.prototype)
   }
 
