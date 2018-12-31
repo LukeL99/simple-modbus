@@ -99,7 +99,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     // Pad array with false at end to end on an 8 bit boundary
     const paddedData = [...data, ...(new Array<boolean>(8 - (inputsRequested % 8)).fill(false))]
     for (let i = 0; i < byteLength; i++) {
-      // Take a slice of the array of length 8, reverse it, then fill the accumulator with it (starting from right)
+      // Take a slice of the array of length 8, and fill the accumulator with it (starting from right)
       response[9 + i] = paddedData.slice(i * 8, 8 + (i * 8)).reduce(
         (accumulator, currentValue, currentIndex) => accumulator | ((currentValue ? 1 : 0) << currentIndex),
         0x00)

@@ -63,15 +63,26 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
   protected readonly _successGetter: GenericSuccessGetter | BoolArraySuccessGetter | Uint16ArraySuccessGetter
   protected readonly _failureGetter: FailureGetter
 
-  // If RTU, unitId is equivalent to slaveId
-  public get unitId() {
+  /**
+   * If RTU, unitId is equivalent to slaveId
+   */
+  public get unitId(): number {
     return this._unitIdGetter(this._rawPacket)
   }
 
-  public get functionCode() {
+  /**
+   * Modbus function code
+   */
+  public get functionCode(): ModbusFunctionCode {
     return this._functionCodeGetter(this._rawPacket)
   }
 
+  /**
+   * This function will give you the response packet bytes that will be sent on the emitting server. Before calling this function, the `success` or `fail` method must be called in order to set the response.
+   *
+   * @returns A buffer of the bytes representing the response to the server
+   * @throws ModbusCommandError if success or fail hasn't been called yet
+   */
   public get responsePacket(): Buffer {
     if (!this._responsePacket) {
       throw new ModbusCommandError('Tried to read response packet, but success or fail has not been called.')
@@ -89,8 +100,13 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
     this._failureGetter = failureGetter
   }
 
+  /**
+   * Set a failure on this command to return an exception response to the emitting server.
+   *
+   * @param exception - The reason for the failure
+   */
   public fail(exception: ModbusCommandExcepton): void {
-    this. _responsePacket = this._failureGetter(this._rawPacket, exception)
+    this._responsePacket = this._failureGetter(this._rawPacket, exception)
     this.onComplete.emit(this)
     this.onFailure.emit(this)
   }
@@ -110,9 +126,14 @@ export class ReadCoilStatusCommand extends ModbusCommand<ReadCoilStatusCommand> 
     return this._coilLengthGetter(this._rawPacket)
   }
 
+  /**
+   * Set success on this command to return a valid response to the emitting server.
+   *
+   * @param data - Boolean coil data, starting at `coilStartAddress`, of length `numberOfCoils`.
+   */
   public success(data: Array<boolean>): void {
     // TODO: Throw error here if data length doesn't equal requested length
-    this. _responsePacket = (this._successGetter as BoolArraySuccessGetter)(this._rawPacket, data)
+    this._responsePacket = (this._successGetter as BoolArraySuccessGetter)(this._rawPacket, data)
     this.onComplete.emit(this)
     this.onSuccess.emit(this)
   }
@@ -140,9 +161,14 @@ export class ReadInputStatusCommand extends ModbusCommand<ReadInputStatusCommand
     return this._inputLengthGetter(this._rawPacket)
   }
 
+  /**
+   * Set success on this command to return a valid response to the emitting server.
+   *
+   * @param data - Input status data of requested discrete inputs. `true` = ON, `false` = off
+   */
   public success(data: Array<boolean>): void {
     // TODO: Throw error here if data length doesn't equal requested length
-    this. _responsePacket = (this._successGetter as BoolArraySuccessGetter)(this._rawPacket, data)
+    this._responsePacket = (this._successGetter as BoolArraySuccessGetter)(this._rawPacket, data)
     this.onComplete.emit(this)
     this.onSuccess.emit(this)
   }
@@ -170,9 +196,14 @@ export class ReadHoldingRegistersCommand extends ModbusCommand<ReadHoldingRegist
     return this._registerLengthGetter(this._rawPacket)
   }
 
+  /**
+   * Set success on this command to return a valid response to the emitting server.
+   *
+   * @param data - Array of values of the requested holding registers. Register values are 16 bits. Array length must equal `registerLength`. `data[0]` should be the value of the register at `registerStartAddress`.
+   */
   public success(data: Uint16Array): void {
     // TODO: Throw error here if data length doesn't equal requested length
-    this. _responsePacket = (this._successGetter as Uint16ArraySuccessGetter)(this._rawPacket, data)
+    this._responsePacket = (this._successGetter as Uint16ArraySuccessGetter)(this._rawPacket, data)
     this.onComplete.emit(this)
     this.onSuccess.emit(this)
   }
@@ -198,9 +229,14 @@ export class ReadInputRegistersCommand extends ModbusCommand<ReadInputRegistersC
     return this._registerLengthGetter(this._rawPacket)
   }
 
+  /**
+   * Set success on this command to return a valid response to the emitting server.
+   *
+   * @param data - Array of values of the requested input registers. Register values are 16 bits. Array length must equal `registerLength`. `data[0]` should be the value of the register at `registerStartAddress`.
+   */
   public success(data: Uint16Array): void {
     // TODO: Throw error here if data length doesn't equal requested length
-    this. _responsePacket = (this._successGetter as Uint16ArraySuccessGetter)(this._rawPacket, data)
+    this._responsePacket = (this._successGetter as Uint16ArraySuccessGetter)(this._rawPacket, data)
     this.onComplete.emit(this)
     this.onSuccess.emit(this)
   }
@@ -226,8 +262,11 @@ export class ForceSingleCoilCommand extends ModbusCommand<ForceSingleCoilCommand
     return this._coilStatusGetter(this._rawPacket)
   }
 
+  /**
+   * Set success on this command to return a valid response to the emitting server.
+   */
   public success(): void {
-    this. _responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
+    this._responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
     this.onComplete.emit(this)
     this.onSuccess.emit(this)
   }
@@ -253,8 +292,11 @@ export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegis
     return this._registerValueGetter(this._rawPacket)
   }
 
+  /**
+   * Set success on this command to return a valid response to the emitting server.
+   */
   public success(): void {
-    this. _responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
+    this._responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
     this.onComplete.emit(this)
     this.onSuccess.emit(this)
   }
