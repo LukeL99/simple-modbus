@@ -6,7 +6,7 @@ import {
   ForceMultipleCoilsCommand,
   ForceSingleCoilCommand,
   ModbusCommand,
-  ModbusFunctionCode,
+  ModbusFunctionCode, PresetMultipleRegistersCommand,
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand, ReadHoldingRegistersCommand, ReadInputRegistersCommand, ReadInputStatusCommand
 } from '../modbus-commands'
@@ -66,6 +66,9 @@ export class ModbusTcpServer extends ModbusServer {
             break
           case ModbusFunctionCode.FORCE_MULTIPLE_COILS:
             _this.onForceMultipleCoils.emit(command as ForceMultipleCoilsCommand)
+            break
+          case ModbusFunctionCode.PRESET_MULTIPLE_REGISTERS:
+            _this.onPresetMultipleRegisters.emit(command as PresetMultipleRegistersCommand)
             break
         }
 

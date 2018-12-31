@@ -35,7 +35,7 @@ export type InputAddressGetter = (requestPacket: Buffer) => number
 export type InputLengthGetter = (requestPacket: Buffer) => number
 export type RegisterAddressGetter = (requestPacket: Buffer) => number
 export type RegisterValueGetter = (requestPacket: Buffer) => number
-export type RegisterValuesGetter = (requestPacket: Buffer) => Array<number>
+export type RegisterValuesGetter = (requestPacket: Buffer) => Array<number> | undefined
 export type RegisterLengthGetter = (requestPacket: Buffer) => number
 
 export type GenericSuccessGetter = (requestPacket: Buffer, length?: number) => Buffer
@@ -312,7 +312,6 @@ export class PresetSingleRegisterCommand extends ModbusCommand<PresetSingleRegis
   }
 }
 
-
 export class ForceMultipleCoilsCommand extends ModbusCommand<ForceMultipleCoilsCommand> {
   private readonly _coilAddressGetter: CoilAddressGetter
   private readonly _coilLengthGetter: CoilLengthGetter
@@ -326,7 +325,7 @@ export class ForceMultipleCoilsCommand extends ModbusCommand<ForceMultipleCoilsC
     return this._coilLengthGetter(this._rawPacket)
   }
 
-  public get coilStatuses() {
+  public get coilValues() {
     return this._coilStatusesGetter(this._rawPacket)
   }
 
@@ -347,5 +346,42 @@ export class ForceMultipleCoilsCommand extends ModbusCommand<ForceMultipleCoilsC
     this._coilAddressGetter = coilAddressGetter
     this._coilLengthGetter = coilLengthGetter
     this._coilStatusesGetter = coilStatusesGetter
+  }
+}
+
+export class PresetMultipleRegistersCommand extends ModbusCommand<PresetMultipleRegistersCommand> {
+  private readonly _registerAddressGetter: RegisterAddressGetter
+  private readonly _registerLengthGetter: RegisterLengthGetter
+  private readonly _registerValuesGetter: RegisterValuesGetter
+
+  public get registerStartAddress() {
+    return this._registerAddressGetter(this._rawPacket)
+  }
+
+  public get registerLength() {
+    return this._registerLengthGetter(this._rawPacket)
+  }
+
+  public get registerValues() {
+    return this._registerValuesGetter(this._rawPacket)
+  }
+
+  /**
+   * Set success on this command to return a valid response to the emitting server.
+   */
+  public success(): void {
+    this._responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
+  }
+
+  constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
+              successGetter: GenericSuccessGetter, failureGetter: FailureGetter,
+              registerAddressGetter: RegisterAddressGetter, registerLengthGetter: RegisterLengthGetter,
+              registerValuesGetter: RegisterValuesGetter) {
+    super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
+    this._registerAddressGetter = registerAddressGetter
+    this._registerLengthGetter = registerLengthGetter
+    this._registerValuesGetter = registerValuesGetter
   }
 }

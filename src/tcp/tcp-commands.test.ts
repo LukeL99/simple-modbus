@@ -3,7 +3,7 @@ import {
   ForceSingleCoilCommand,
   ModbusCommand,
   ModbusCommandExcepton,
-  ModbusFunctionCode,
+  ModbusFunctionCode, PresetMultipleRegistersCommand,
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand,
   ReadHoldingRegistersCommand,
@@ -13,7 +13,7 @@ import {
 import { ModbusCommandError } from '../error/modbus-errors'
 import { ModbusTcp } from '../simple-modbus'
 
-describe('ReadCoilStatusCommand test', () => {
+describe('ReadCoilStatusCommand tests', () => {
 
   // 0-1   = Transaction ID
   // 2-3   = Protocol ID (0x0000)
@@ -128,7 +128,7 @@ describe('ReadCoilStatusCommand test', () => {
 
 })
 
-describe('ReadInputStatusCommand test', () => {
+describe('ReadInputStatusCommand tests', () => {
 
   // 0-1   = Transaction ID
   // 2-3   = Protocol ID (0x0000)
@@ -240,7 +240,7 @@ describe('ReadInputStatusCommand test', () => {
 
 })
 
-describe('ReadHoldingRegistersCommand test', () => {
+describe('ReadHoldingRegistersCommand tests', () => {
 
   // 0-1   = Transaction ID
   // 2-3   = Protocol ID (0x0000)
@@ -348,7 +348,7 @@ describe('ReadHoldingRegistersCommand test', () => {
 
 })
 
-describe('ReadInputRegistersCommand test', () => {
+describe('ReadInputRegistersCommand tests', () => {
 
   // 0-1   = Transaction ID
   // 2-3   = Protocol ID (0x0000)
@@ -456,7 +456,115 @@ describe('ReadInputRegistersCommand test', () => {
 
 })
 
-describe('ForceSingleCoilCommand test', () => {
+describe('PresetSingleRegisterCommand tests', () => {
+
+  // 0-1   = Transaction ID
+  // 2-3   = Protocol ID (0x0000)
+  // 4-5   = Message Length
+  // 6     = UnitId
+  // 7     = Function Code
+  // 8-9   = Register Address (0x0110 = 272)
+  // 10-11 = Register Value (0x0110 = 272)
+  const validCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x01, 0x10, 0x01, 0x10]
+
+  const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x01, 0x10, 0x01, 0x10]
+
+  it('should return an instance of PresetSingleRegisterCommand', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
+  })
+
+  it('should return the right function code', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    expect(command.functionCode).toEqual(ModbusFunctionCode.PRESET_SINGLE_REGISTER)
+  })
+
+  it('should return the right register address (Blank)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    expect(command.registerAddress).toEqual(272)
+  })
+
+  it('should return the right register address (Simple)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory({ simpleAddressing: true })
+    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    expect(command.registerAddress).toEqual(272)
+  })
+
+  it('should return the right register address (Modbus)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory({ simpleAddressing: false })
+    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    expect(command.registerAddress).toEqual(40273)
+  })
+
+  it('should return the right register value', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    expect(command.registerValue).toEqual(272)
+  })
+
+  it('should return the right Unit ID', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    expect(command.unitId).toEqual(0x11)
+  })
+
+  it('should emit a complete response on success', done => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    command.onComplete.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(validResponseBytes))
+      done()
+    })
+    command.success()
+  })
+
+  it('should emit a success response on success', done => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    command.onSuccess.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(validResponseBytes))
+      done()
+    })
+    command.success()
+  })
+
+  it('should emit a complete response on failure', done => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
+    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    command.onComplete.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
+      done()
+    })
+    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+  })
+
+  it('should emit a failure response on failure', done => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
+    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    command.onFailure.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
+      done()
+    })
+    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+  })
+
+  it('should throw an error when accessing response packet before success or fail has been called', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    expect(() => {
+      let response = command.responsePacket
+      // }).toThrowError(ModbusCommandError)
+    }).toThrowError(new ModbusCommandError('Tried to read response packet, but success or fail has not been called.'))
+  })
+
+})
+
+describe('ForceSingleCoilCommand tests', () => {
 
   // 0-1   = Transaction ID
   // 2-3   = Protocol ID (0x0000)
@@ -576,7 +684,7 @@ describe('ForceSingleCoilCommand test', () => {
 
 })
 
-describe('ForceMultipleCoilsCommand test', () => {
+describe('ForceMultipleCoilsCommand tests', () => {
 
   // 0-1   = Transaction ID
   // 2-3   = Protocol ID (0x0000)
@@ -593,7 +701,7 @@ describe('ForceMultipleCoilsCommand test', () => {
   const invalidRequestBytes2 = [0x00, 0x01, 0x00, 0x00, 0x00, 0x09, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A, 0x02, 0xCD, 0x01, 0x00]
   const invalidRequestBytes3 = [0x00, 0x01, 0x00, 0x00, 0x00, 0x09, 0x05, 0x0F, 0x01, 0x10, 0x00, 0xFF, 0x02, 0xCD, 0x01]
 
-  const coilStatuses = [true, false, true, true, false, false, true, true, true, false]
+  const coilValues = [true, false, true, true, false, false, true, true, true, false]
 
   const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A]
 
@@ -632,7 +740,7 @@ describe('ForceMultipleCoilsCommand test', () => {
   it('should return requested coil statuses', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
     const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as ForceMultipleCoilsCommand)
-    expect(command.coilStatuses).toEqual(coilStatuses)
+    expect(command.coilValues).toEqual(coilValues)
   })
 
   it('should return correct coil length', () => {
@@ -712,64 +820,95 @@ describe('ForceMultipleCoilsCommand test', () => {
 
 })
 
-describe('PresetSingleRegisterCommand test', () => {
+describe('PresetMultipleRegistersCommand tests', () => {
 
   // 0-1   = Transaction ID
   // 2-3   = Protocol ID (0x0000)
   // 4-5   = Message Length
   // 6     = UnitId
   // 7     = Function Code
-  // 8-9   = Register Address (0x0110 = 272)
-  // 10-11 = Register Value (0x0110 = 272)
-  const validCommandBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x01, 0x10, 0x01, 0x10]
+  // 8-9   = Register Start Address (0x0110 = 272)
+  // 10-11 = Register Length (000A = 10)
+  // 12    = Bytes to follow (0x04 = 4)
+  // 13-16 = Register values
+  const validRequestBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x05, 0x10, 0x01, 0x10, 0x00, 0x02, 0x04, 0x00, 0x0A, 0x01, 0x02]
 
-  const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x01, 0x10, 0x01, 0x10]
+  const invalidRequestBytes1 = [0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x05, 0x10, 0x01, 0x10, 0x00, 0x02, 0x05, 0x00, 0x0A, 0x01, 0x02]
+  const invalidRequestBytes2 = [0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x05, 0x10, 0x01, 0x10, 0x00, 0x02, 0x04, 0x00, 0x0A, 0x01, 0x02, 0x00]
+  const invalidRequestBytes3 = [0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x05, 0x10, 0x01, 0x10, 0x00, 0x03, 0x04, 0x00, 0x0A, 0x01, 0x02]
 
-  it('should return an instance of PresetSingleRegisterCommand', () => {
+  const registerValues = [0x000A, 0x0102]
+
+  const validResponseBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x10, 0x01, 0x10, 0x00, 0x02]
+
+  const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x05, 0x90, 0x04]
+
+  it('should return an instance of PresetMultipleRegistersCommand', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
-    expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
+    const command = commandFactory.fromPacket(Buffer.from(validRequestBytes))
+    expect(command).toBeInstanceOf(PresetMultipleRegistersCommand)
   })
 
   it('should return the right function code', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
-    expect(command.functionCode).toEqual(ModbusFunctionCode.PRESET_SINGLE_REGISTER)
+    const command = commandFactory.fromPacket(Buffer.from(validRequestBytes))
+    expect(command.functionCode).toEqual(ModbusFunctionCode.PRESET_MULTIPLE_REGISTERS)
   })
 
   it('should return the right register address (Blank)', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
-    expect(command.registerAddress).toEqual(272)
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
+    expect(command.registerStartAddress).toEqual(272)
   })
 
   it('should return the right register address (Simple)', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory({ simpleAddressing: true })
-    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
-    expect(command.registerAddress).toEqual(272)
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
+    expect(command.registerStartAddress).toEqual(272)
   })
 
   it('should return the right register address (Modbus)', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory({ simpleAddressing: false })
-    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
-    expect(command.registerAddress).toEqual(40273)
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
+    expect(command.registerStartAddress).toEqual(40273)
   })
 
-  it('should return the right register value', () => {
+  it('should return requested register statuses', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
-    expect(command.registerValue).toEqual(272)
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
+    expect(command.registerValues).toEqual(registerValues)
   })
 
-  it('should return the right Unit ID', () => {
+  it('should return correct register length', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
-    expect(command.unitId).toEqual(0x11)
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
+    expect(command.registerLength).toEqual(2)
+  })
+
+  it('should throw on an invalid register length', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    expect(() => {
+      const command = (commandFactory.fromPacket(Buffer.from(invalidRequestBytes1)) as PresetMultipleRegistersCommand)
+    }).toThrowError(new ModbusCommandError('PRESET_MULTIPLE_REGISTERS - Invalid register command received'))
+  })
+
+  it('should throw on an invalid register length 2', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    expect(() => {
+      const command = (commandFactory.fromPacket(Buffer.from(invalidRequestBytes2)) as PresetMultipleRegistersCommand)
+    }).toThrowError(new ModbusCommandError('PRESET_MULTIPLE_REGISTERS - Invalid register command received'))
+  })
+
+  it('should throw on an invalid register length 3', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    expect(() => {
+      const command = (commandFactory.fromPacket(Buffer.from(invalidRequestBytes3)) as PresetMultipleRegistersCommand)
+    }).toThrowError(new ModbusCommandError('PRESET_MULTIPLE_REGISTERS - Invalid register command received'))
   })
 
   it('should emit a complete response on success', done => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
     command.onComplete.on((command: ModbusCommand<any>) => {
       expect(command.responsePacket).toEqual(Buffer.from(validResponseBytes))
       done()
@@ -779,7 +918,7 @@ describe('PresetSingleRegisterCommand test', () => {
 
   it('should emit a success response on success', done => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const command = (commandFactory.fromPacket(Buffer.from(validCommandBytes)) as PresetSingleRegisterCommand)
+    const command = (commandFactory.fromPacket(Buffer.from(validRequestBytes)) as PresetMultipleRegistersCommand)
     command.onSuccess.on((command: ModbusCommand<any>) => {
       expect(command.responsePacket).toEqual(Buffer.from(validResponseBytes))
       done()
@@ -789,8 +928,7 @@ describe('PresetSingleRegisterCommand test', () => {
 
   it('should emit a complete response on failure', done => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
-    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    const command = commandFactory.fromPacket(Buffer.from(validRequestBytes))
     command.onComplete.on((command: ModbusCommand<any>) => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
@@ -800,8 +938,7 @@ describe('PresetSingleRegisterCommand test', () => {
 
   it('should emit a failure response on failure', done => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x11, 0x86, 0x04]
-    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    const command = commandFactory.fromPacket(Buffer.from(validRequestBytes))
     command.onFailure.on((command: ModbusCommand<any>) => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
@@ -811,10 +948,9 @@ describe('PresetSingleRegisterCommand test', () => {
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
-    const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    const command = commandFactory.fromPacket(Buffer.from(validRequestBytes))
     expect(() => {
       let response = command.responsePacket
-      // }).toThrowError(ModbusCommandError)
     }).toThrowError(new ModbusCommandError('Tried to read response packet, but success or fail has not been called.'))
   })
 

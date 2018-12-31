@@ -7,7 +7,7 @@ import {
   GenericSuccessGetter,
   InputAddressGetter,
   InputLengthGetter,
-  ModbusFunctionCode,
+  ModbusFunctionCode, PresetMultipleRegistersCommand,
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand,
   ReadHoldingRegistersCommand,
@@ -15,7 +15,7 @@ import {
   ReadInputStatusCommand,
   RegisterAddressGetter,
   RegisterLengthGetter,
-  RegisterValueGetter,
+  RegisterValueGetter, RegisterValuesGetter,
   Uint16ArraySuccessGetter,
   UnitIdGetter
 } from '../modbus-commands'
@@ -42,6 +42,38 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
   private _packetCopySuccessGetter: GenericSuccessGetter = (requestPacket => Buffer.from(requestPacket))
 
   private _forceMultipleCoilsSuccessGetter: GenericSuccessGetter = (requestPacket => {
+    const response = Array.from(requestPacket).slice(0, 12)
+    response[4] = 0x00
+    response[5] = 0x06
+    return Buffer.from(response)
+  })
+
+  private _failureGetter: FailureGetter = ((requestPacket, exception) => {
+    let response = []
+
+    // First 2 bytes are the Transaction Identifier
+    response[0] = requestPacket.readUInt8(0)
+    response[1] = requestPacket.readUInt8(1)
+
+    // Next 2 bytes are protocol ID. These should always be 0x0000. But the protocol says to copy them from the request.
+    response[2] = requestPacket.readUInt8(2)
+    response[3] = requestPacket.readUInt8(3)
+
+    // Failure length is always constant
+    response[4] = 0x00
+    response[5] = 0x03
+
+    // Copy UnitId from request
+    response[6] = requestPacket.readUInt8(6)
+
+    // Function code is request function code with highest bit set
+    response[7] = requestPacket.readUInt8(7) | 0b10000000
+    response[8] = exception
+
+    return Buffer.from(new Uint8Array(response))
+  })
+
+  private _presetMultipleRegistersSuccessGetter: GenericSuccessGetter = (requestPacket => {
     const response = Array.from(requestPacket).slice(0, 12)
     response[4] = 0x00
     response[5] = 0x06
@@ -135,31 +167,6 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     return Buffer.from(new Uint8Array(response))
   }
 
-  private _failureGetter: FailureGetter = ((requestPacket, exception) => {
-    let response = []
-
-    // First 2 bytes are the Transaction Identifier
-    response[0] = requestPacket.readUInt8(0)
-    response[1] = requestPacket.readUInt8(1)
-
-    // Next 2 bytes are protocol ID. These should always be 0x0000. But the protocol says to copy them from the request.
-    response[2] = requestPacket.readUInt8(2)
-    response[3] = requestPacket.readUInt8(3)
-
-    // Failure length is always constant
-    response[4] = 0x00
-    response[5] = 0x03
-
-    // Copy UnitId from request
-    response[6] = requestPacket.readUInt8(6)
-
-    // Function code is request function code with highest bit set
-    response[7] = requestPacket.readUInt8(7) | 0b10000000
-    response[8] = exception
-
-    return Buffer.from(new Uint8Array(response))
-  })
-
   private _holdingRegisterAddressGetter: RegisterAddressGetter = (requestPacket => {
     return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 40001
   })
@@ -214,6 +221,23 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     return coilArray.slice(0, coilLength)
   }
 
+  private _registerValuesGetter: RegisterValuesGetter = requestPacket => {
+    const registerLength = this._registerLengthGetter(requestPacket)
+    const byteLength = registerLength * 2
+    const packetByteLength = requestPacket.readUInt8(12)
+
+    if (byteLength !== packetByteLength || requestPacket.length !== byteLength + 13) {
+      // Malformed packet, check and throw exception
+      return undefined
+    }
+
+    const registerArray = new Array<number>(registerLength)
+    for (let i = 0; i < registerLength; i++) {
+      registerArray[i] = requestPacket.readUInt16BE(13 + (i * 2))
+    }
+    return registerArray
+  }
+
   private _inputAddressGetter: InputAddressGetter = (requestPacket => {
     return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 10001
   })
@@ -266,13 +290,21 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._failureGetter, this._holdingRegisterAddressGetter,
           this._registerValueGetter)
       case ModbusFunctionCode.FORCE_MULTIPLE_COILS:
-        if(this._coilStatusesGetter(packet) === undefined){
+        if (this._coilStatusesGetter(packet) === undefined) {
           throw new ModbusCommandError('FORCE_MULTIPLE_COILS - Invalid coil status command received', packet)
         }
         return new ForceMultipleCoilsCommand(packet, this._unitIdGetter,
           this._functionCodeGetter, this._forceMultipleCoilsSuccessGetter,
           this._failureGetter, this._coilAddressGetter,
           this._coilLengthGetter, this._coilStatusesGetter)
+      case ModbusFunctionCode.PRESET_MULTIPLE_REGISTERS:
+        if (this._registerValuesGetter(packet) === undefined) {
+          throw new ModbusCommandError('PRESET_MULTIPLE_REGISTERS - Invalid register command received', packet)
+        }
+        return new PresetMultipleRegistersCommand(packet, this._unitIdGetter,
+          this._functionCodeGetter, this._presetMultipleRegistersSuccessGetter,
+          this._failureGetter, this._holdingRegisterAddressGetter,
+          this._registerLengthGetter, this._registerValuesGetter)
       default:
         throw new ModbusCommandError('Function code not implemented', packet)
     }

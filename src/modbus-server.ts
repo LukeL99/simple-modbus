@@ -1,6 +1,6 @@
 import {
   ForceMultipleCoilsCommand,
-  ForceSingleCoilCommand,
+  ForceSingleCoilCommand, PresetMultipleRegistersCommand,
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand,
   ReadHoldingRegistersCommand, ReadInputRegistersCommand,
@@ -25,6 +25,6 @@ export abstract class ModbusServer {
 
   public onForceMultipleCoils = new TypedEvent<ForceMultipleCoilsCommand>()
 
-  // public onPresetMultipleRegisters = new TypedEvent<PresetMultipleRegisters>()
+  public onPresetMultipleRegisters = new TypedEvent<PresetMultipleRegistersCommand>()
 
 }
