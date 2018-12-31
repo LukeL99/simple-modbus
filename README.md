@@ -23,6 +23,43 @@ The aim of this project is to make it extremely easy to work with Modbus with No
 - [ ] Modbus ASCII Client
 - [ ] Modbus RTU/IP Client
 
+## Examples
+
+Start a ModbusTCP server, and listen for only preset single register commands (function code 0x06).
+
+Typescript:
+```typescript
+import { ModbusTcp, ModbusCommandException } from 'simple-modbus'
+
+const server = new ModbusTcp.Server()
+server.listen(502)
+
+server.onPresetSingleRegister.on(command => {
+  console.log(`${command.registerAddress} - ${command.registerValue}`)
+  // Respond with Success
+  command.success()
+  // Or respond with failure
+  command.fail(ModbusCommandException.ILLEGAL_DATA_ADDRESS)
+})
+```
+
+Javascript:
+```javascript
+const ModbusTcp = require('simple-modbus').ModbusTcp
+const ModbusCommandException = require('simple-modbus').ModbusCommandException
+
+const server = new ModbusTcp.Server();
+server.listen(502);
+
+server.onPresetSingleRegister.on(command => {
+  console.log(`${command.registerAddress} - ${command.registerValue}`)
+  // Respond with Success
+  command.success()
+  // Or respond with failure
+  command.fail(ModbusCommandException.ILLEGAL_DATA_ADDRESS)
+})
+```
+
 ## Contributors
 
 Thanks goes to these wonderful people ([emoji key](https://github.com/kentcdodds/all-contributors#emoji-key)):

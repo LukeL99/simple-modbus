@@ -3,7 +3,7 @@ import {
   ForceMultipleCoilsCommand,
   ForceSingleCoilCommand,
   ModbusCommand,
-  ModbusCommandExcepton,
+  ModbusCommandException,
   ModbusFunctionCode, PresetMultipleRegistersCommand,
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand,
@@ -105,7 +105,7 @@ describe('ReadCoilStatusCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should emit a failure response on failure', done => {
@@ -116,7 +116,7 @@ describe('ReadCoilStatusCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {
@@ -218,7 +218,7 @@ describe('ReadInputStatusCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should emit a failure response on failure', done => {
@@ -228,7 +228,7 @@ describe('ReadInputStatusCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {
@@ -326,7 +326,7 @@ describe('ReadHoldingRegistersCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should emit a failure response on failure', done => {
@@ -336,7 +336,7 @@ describe('ReadHoldingRegistersCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {
@@ -434,7 +434,7 @@ describe('ReadInputRegistersCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should emit a failure response on failure', done => {
@@ -444,7 +444,7 @@ describe('ReadInputRegistersCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {
@@ -540,7 +540,7 @@ describe('PresetSingleRegisterCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should emit a failure response on failure', done => {
@@ -551,7 +551,7 @@ describe('PresetSingleRegisterCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {
@@ -674,7 +674,7 @@ describe('ForceSingleCoilCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should emit a failure response on failure', done => {
@@ -684,7 +684,7 @@ describe('ForceSingleCoilCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {
@@ -817,7 +817,7 @@ describe('ForceMultipleCoilsCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should emit a failure response on failure', done => {
@@ -827,7 +827,7 @@ describe('ForceMultipleCoilsCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {
@@ -960,7 +960,7 @@ describe('PresetMultipleRegistersCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should emit a failure response on failure', done => {
@@ -970,7 +970,7 @@ describe('PresetMultipleRegistersCommand tests', () => {
       expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
       done()
     })
-    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+    command.fail(ModbusCommandException.SERVER_DEVICE_FAILURE)
   })
 
   it('should throw an error when accessing response packet before success or fail has been called', () => {

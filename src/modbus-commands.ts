@@ -12,7 +12,7 @@ export enum ModbusFunctionCode {
   PRESET_MULTIPLE_REGISTERS = 0X10
 }
 
-export enum ModbusCommandExcepton {
+export enum ModbusCommandException {
   ILLEGAL_FUNCTION = 0X01,
   ILLEGAL_DATA_ADDRESS = 0X02,
   ILLEGAL_DATA_VALUE = 0X03,
@@ -46,7 +46,7 @@ export type RegisterLengthGetter = (requestPacket: Buffer) => number
 export type GenericSuccessGetter = (requestPacket: Buffer, length?: number) => Buffer
 export type BoolArraySuccessGetter = (reqestPacket: Buffer, data: Array<boolean>) => Buffer
 export type Uint16ArraySuccessGetter = (requestPacket: Buffer, data: Uint16Array) => Buffer
-export type FailureGetter = (requestPacket: Buffer, exception: ModbusCommandExcepton) => Buffer
+export type FailureGetter = (requestPacket: Buffer, exception: ModbusCommandException) => Buffer
 
 export abstract class ModbusCommand<T extends ModbusCommand<any>> {
 
@@ -112,7 +112,7 @@ export abstract class ModbusCommand<T extends ModbusCommand<any>> {
    *
    * @param exception - The reason for the failure
    */
-  public fail(exception: ModbusCommandExcepton): void {
+  public fail(exception: ModbusCommandException): void {
     this._responsePacket = this._failureGetter(this._rawPacket, exception)
     this.onComplete.emit(this)
     this.onFailure.emit(this)

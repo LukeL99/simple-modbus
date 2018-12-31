@@ -5,7 +5,7 @@
   "keywords": [],
   "main": "dist/simple-modbus.cjs.js",
   "module": "dist/simple-modbus.esm.js",
-  "typings": "dist/types/simple-modbus.d.ts",
+  "typings": "dist/simple-modbus.d.ts",
   "files": [
     "dist"
   ],
