@@ -1,8 +1,8 @@
 import {
   BoolArraySuccessGetter,
   CoilAddressGetter,
-  CoilLengthGetter,
-  FailureGetter,
+  CoilLengthGetter, CoilStatusGetter,
+  FailureGetter, ForceSingleCoilCommand,
   FunctionCodeGetter,
   GenericSuccessGetter,
   InputAddressGetter,
@@ -177,6 +177,16 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
     return requestPacket.readUInt16BE(10)
   })
 
+  private _coilStatusGetter: CoilStatusGetter = (requestPacket => {
+    const value = requestPacket.readUInt16BE(10)
+    if (value === 0xFF00) {
+      return true
+    } else if (value === 0x0000) {
+      return false
+    }
+    return undefined
+  })
+
   private _inputAddressGetter: InputAddressGetter = (requestPacket => {
     return this.simpleAddressing ? requestPacket.readUInt16BE(8) : requestPacket.readUInt16BE(8) + 10001
   })
@@ -215,6 +225,14 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
           this._functionCodeGetter, this._readRegistersSuccessGetter,
           this._failureGetter, this._inputRegisterAddressGetter,
           this._registerLengthGetter)
+      case ModbusFunctionCode.FORCE_SINGLE_COIL:
+        if (this._coilStatusGetter(packet) === undefined) {
+          throw new ModbusCommandError('Invalid coil status received.')
+        }
+        return new ForceSingleCoilCommand(packet, this._unitIdGetter,
+          this._functionCodeGetter, this._packetCopySuccessGetter,
+          this._failureGetter, this._coilAddressGetter,
+          this._coilStatusGetter)
       case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
         return new PresetSingleRegisterCommand(packet, this._unitIdGetter,
           this._functionCodeGetter, this._packetCopySuccessGetter,

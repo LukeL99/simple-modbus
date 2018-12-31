@@ -1,4 +1,5 @@
 import {
+  ForceSingleCoilCommand,
   PresetSingleRegisterCommand,
   ReadCoilStatusCommand,
   ReadHoldingRegistersCommand, ReadInputRegistersCommand,
@@ -27,6 +28,8 @@ export abstract class ModbusServer {
   public onReadHoldingRegisters = new TypedEvent<ReadHoldingRegistersCommand>()
 
   public onReadInputRegisters = new TypedEvent<ReadInputRegistersCommand>()
+
+  public onForceSingleCoil = new TypedEvent<ForceSingleCoilCommand>()
 
   public onPresetSingleRegister = new TypedEvent<PresetSingleRegisterCommand>()
 

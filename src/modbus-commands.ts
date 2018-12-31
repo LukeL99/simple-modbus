@@ -29,6 +29,7 @@ export type UnitIdGetter = (requestPacket: Buffer) => number
 export type FunctionCodeGetter = (requestPacket: Buffer) => ModbusFunctionCode
 export type CoilAddressGetter = (requestPacket: Buffer) => number
 export type CoilLengthGetter = (requestPacket: Buffer) => number
+export type CoilStatusGetter = (requestPacket: Buffer) => boolean | undefined
 export type InputAddressGetter = (requestPacket: Buffer) => number
 export type InputLengthGetter = (requestPacket: Buffer) => number
 export type RegisterAddressGetter = (requestPacket: Buffer) => number
@@ -210,6 +211,33 @@ export class ReadInputRegistersCommand extends ModbusCommand<ReadInputRegistersC
     super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
     this._registerAddressGetter = registerAddressGetter
     this._registerLengthGetter = registerLengthGetter
+  }
+}
+
+export class ForceSingleCoilCommand extends ModbusCommand<ForceSingleCoilCommand> {
+  private readonly _coilAddressGetter: CoilAddressGetter
+  private readonly _coilStatusGetter: CoilStatusGetter
+
+  public get coilAddress() {
+    return this._coilAddressGetter(this._rawPacket)
+  }
+
+  public get coilStatus() {
+    return this._coilStatusGetter(this._rawPacket)
+  }
+
+  public success(): void {
+    this. _responsePacket = (this._successGetter as GenericSuccessGetter)(this._rawPacket)
+    this.onComplete.emit(this)
+    this.onSuccess.emit(this)
+  }
+
+  constructor(rawPacket: Buffer, unitIdGetter: UnitIdGetter, functionCodeGetter: FunctionCodeGetter,
+              successGetter: Uint16ArraySuccessGetter, failureGetter: FailureGetter,
+              coilAddressGetter: CoilAddressGetter, coilStatusGetter: CoilStatusGetter) {
+    super(rawPacket, unitIdGetter, functionCodeGetter, successGetter, failureGetter)
+    this._coilAddressGetter = coilAddressGetter
+    this._coilStatusGetter = coilStatusGetter
   }
 }
 

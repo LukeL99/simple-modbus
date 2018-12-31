@@ -3,6 +3,7 @@ import '../util/typed-event'
 import { ModbusServer } from '../modbus-server'
 import { ModbusTcpCommandFactory } from './modbus-tcp-command-factory'
 import {
+  ForceSingleCoilCommand,
   ModbusCommand,
   ModbusFunctionCode,
   PresetSingleRegisterCommand,
@@ -55,6 +56,9 @@ export class ModbusTcpServer extends ModbusServer {
             break
           case ModbusFunctionCode.READ_INPUT_REGISTERS:
             _this.onReadInputRegisters.emit(command as ReadInputRegistersCommand)
+            break
+          case ModbusFunctionCode.FORCE_SINGLE_COIL:
+            _this.onForceSingleCoil.emit(command as ForceSingleCoilCommand)
             break
           case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
             _this.onPresetSingleRegister.emit(command as PresetSingleRegisterCommand)

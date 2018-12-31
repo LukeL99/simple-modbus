@@ -1,4 +1,5 @@
 import {
+  ForceSingleCoilCommand,
   ModbusCommand,
   ModbusCommandExcepton,
   ModbusFunctionCode,
@@ -447,6 +448,120 @@ describe('ReadInputRegistersCommand test', () => {
   it('should throw an error when accessing response packet before success or fail has been called', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
     const command = commandFactory.fromPacket(Buffer.from(validCommandBytes))
+    expect(() => {
+      let response = command.responsePacket
+    }).toThrowError(new ModbusCommandError('Tried to read response packet, but success or fail has not been called.'))
+  })
+
+})
+
+describe('ForceSingleCoilCommand test', () => {
+
+  // 0-1   = Transaction ID
+  // 2-3   = Protocol ID (0x0000)
+  // 4-5   = Message Length
+  // 6     = UnitId
+  // 7     = Function Code
+  // 8-9   = Coil Address (0x0110 = 272)
+  // 10-11 = Coil Status (0xFF00 = ON, 0x0000 = OFF)
+  const coilOnBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x05, 0x01, 0x10, 0xFF, 0x00]
+  const coilOffBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x05, 0x01, 0x10, 0x00, 0x00]
+  const coilInvalidBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x05, 0x01, 0x10, 0x11, 0x11]
+
+  const failureBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x05, 0x85, 0x04]
+
+  it('should return an instance of ForceSingleCoilCommand', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = commandFactory.fromPacket(Buffer.from(coilOnBytes))
+    expect(command).toBeInstanceOf(ForceSingleCoilCommand)
+  })
+
+  it('should return the right function code', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = commandFactory.fromPacket(Buffer.from(coilOnBytes))
+    expect(command.functionCode).toEqual(ModbusFunctionCode.FORCE_SINGLE_COIL)
+  })
+
+  it('should return the right coil address (Blank)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(coilOnBytes)) as ForceSingleCoilCommand)
+    expect(command.coilAddress).toEqual(272)
+  })
+
+  it('should return the right coil address (Simple)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory({ simpleAddressing: true })
+    const command = (commandFactory.fromPacket(Buffer.from(coilOnBytes)) as ForceSingleCoilCommand)
+    expect(command.coilAddress).toEqual(272)
+  })
+
+  it('should return the right coil address (Modbus)', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory({ simpleAddressing: false })
+    const command = (commandFactory.fromPacket(Buffer.from(coilOnBytes)) as ForceSingleCoilCommand)
+    expect(command.coilAddress).toEqual(273)
+  })
+
+  it('should return coil ON status', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(coilOnBytes)) as ForceSingleCoilCommand)
+    expect(command.coilStatus).toEqual(true)
+  })
+
+  it('should return coil OFF status', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(coilOffBytes)) as ForceSingleCoilCommand)
+    expect(command.coilStatus).toEqual(false)
+  })
+
+  it('should throw on an invalid coil status', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    expect(() => {
+      const command = (commandFactory.fromPacket(Buffer.from(coilInvalidBytes)) as ForceSingleCoilCommand)
+    }).toThrowError(new ModbusCommandError('Invalid coil status received.'))
+  })
+
+  it('should emit a complete response on success', done => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(coilOnBytes)) as ForceSingleCoilCommand)
+    command.onComplete.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(coilOnBytes))
+      done()
+    })
+    command.success()
+  })
+
+  it('should emit a success response on success', done => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = (commandFactory.fromPacket(Buffer.from(coilOffBytes)) as ForceSingleCoilCommand)
+    command.onSuccess.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(coilOffBytes))
+      done()
+    })
+    command.success()
+  })
+
+  it('should emit a complete response on failure', done => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = commandFactory.fromPacket(Buffer.from(coilOnBytes))
+    command.onComplete.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
+      done()
+    })
+    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+  })
+
+  it('should emit a failure response on failure', done => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = commandFactory.fromPacket(Buffer.from(coilOnBytes))
+    command.onFailure.on((command: ModbusCommand<any>) => {
+      expect(command.responsePacket).toEqual(Buffer.from(failureBytes))
+      done()
+    })
+    command.fail(ModbusCommandExcepton.SERVER_DEVICE_FAILURE)
+  })
+
+  it('should throw an error when accessing response packet before success or fail has been called', () => {
+    const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
+    const command = commandFactory.fromPacket(Buffer.from(coilOnBytes))
     expect(() => {
       let response = command.responsePacket
     }).toThrowError(new ModbusCommandError('Tried to read response packet, but success or fail has not been called.'))
