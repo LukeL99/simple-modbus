@@ -3,7 +3,7 @@
 ## A simple library for working with Modbus
 
 [![styled with prettier](https://img.shields.io/badge/styled_with-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
-[![Greenkeeper badge](https://badges.greenkeeper.io/alexjoverm/typescript-library-starter.svg)](https://greenkeeper.io/)
+[![Greenkeeper badge](https://badges.greenkeeper.io/lukel99/simple-modbus.svg)](https://greenkeeper.io/)
 [![Travis](https://travis-ci.org/LukeL99/simple-modbus.svg)](https://travis-ci.org/LukeL99/simple-modbus)
 [![Coveralls](https://coveralls.io/repos/github/LukeL99/simple-modbus/badge.svg)](https://coveralls.io/github/LukeL99/simple-modbus)
 [![Dev Dependencies](https://david-dm.org/LukeL99/simple-modbus/dev-status.svg)](https://david-dm.org/LukeL99/simple-modbus?type=dev)
@@ -11,6 +11,10 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-0-orange.svg?style=flat-square)](#contributors)
 
 The aim of this project is to make it extremely easy to work with Modbus with Node.js. It's written in Typescript, so you get easy to use strong typings. The error handling is consistent and easy, and it has a full test suite to ensure repeatable behavior.
+
+### Typedoc documentation
+
+[Find it here.](https://lukel99.github.io/simple-modbus/index.html)
 
 ### Currently Implemented
 
@@ -23,9 +27,20 @@ The aim of this project is to make it extremely easy to work with Modbus with No
 - [ ] Modbus ASCII Client
 - [ ] Modbus RTU/IP Client
 
+### Function Codes
+
+- [x] [01 - Read Coil Status](https://lukel99.github.io/simple-modbus/classes/readcoilstatuscommand.html)
+- [x] [02 - Read Input Status](https://lukel99.github.io/simple-modbus/classes/readinputstatuscommand.html)
+- [x] [03 - Read Holding Registers](https://lukel99.github.io/simple-modbus/classes/readholdingregisterscommand.html)
+- [x] [04 - Read Input Registers](https://lukel99.github.io/simple-modbus/classes/readinputregisterscommand.html)
+- [x] [05 - Force Single Coil](https://lukel99.github.io/simple-modbus/classes/forcesinglecoilcommand.html)
+- [x] [06 - Preset Single Register](https://lukel99.github.io/simple-modbus/classes/presetsingleregistercommand.html)
+- [x] [15 - Force Multiple Coils](https://lukel99.github.io/simple-modbus/classes/forcemultiplecoilscommand.html)
+- [x] [16 - Preset Multiple Registers](https://lukel99.github.io/simple-modbus/classes/presetmultipleregisterscommand.html)
+
 ## Examples
 
-Start a ModbusTCP server, and listen for only preset single register commands (function code 0x06).
+Start a ModbusTCP server, and listen for all implemented Modbus commands.
 
 Typescript:
 ```typescript
@@ -108,7 +123,18 @@ server.onPresetSingleRegister.on(command => {
 })
 ```
 
+## Options
+
+A server can be initialized with options which will affect its behavior. 
+```
+const server = new ModbusTcp.Server({ simpleAddressing: false })
+```
+
+- [Modbus Addressing](https://lukel99.github.io/simple-modbus/interfaces/modbustcpserveroptions.html#simpleaddressing): By default, register and coil addresses will be 0 indexed, not using Modbus addresses. To change this, set `simpleAddressing` to false
+
 ## Contributors
+
+I need help! I've tested this with an Automation Direct Click PLC, but I need people to test with additional types of PLCs and submit issues. If you can include a Wireshark PCAP captue, that would be very helpful as well. All contributions are appreciated!
 
 Thanks goes to these wonderful people ([emoji key](https://github.com/kentcdodds/all-contributors#emoji-key)):
 
