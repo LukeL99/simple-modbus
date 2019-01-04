@@ -1,8 +1,11 @@
 {
   "name": "simple-modbus",
-  "version": "0.0.0-development",
-  "description": "",
-  "keywords": [],
+  "version": "1.0.0",
+  "description": "A simple library for working with Modbus with Typescript bindings.",
+  "keywords": [
+    "Modbus",
+    "Typescript"
+  ],
   "main": "dist/simple-modbus.cjs.js",
   "module": "dist/simple-modbus.esm.js",
   "typings": "dist/simple-modbus.d.ts",
@@ -117,7 +120,7 @@
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "tslint-config-standard": "^8.0.1",
-    "typedoc": "^0.13.0",
+    "typedoc": "^0.14.0",
     "typescript": "^3.0.3"
   },
   "husky": {
