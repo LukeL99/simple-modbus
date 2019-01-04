@@ -2,7 +2,10 @@
   "name": "simple-modbus",
   "version": "1.0.0",
   "description": "A simple library for working with Modbus with Typescript bindings.",
-  "keywords": ["Modbus", "Typescript"],
+  "keywords": [
+    "Modbus",
+    "Typescript"
+  ],
   "main": "dist/simple-modbus.cjs.js",
   "module": "dist/simple-modbus.esm.js",
   "typings": "dist/simple-modbus.d.ts",
