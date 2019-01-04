@@ -1,3 +1,5 @@
+import { ModbusCommandError } from '../error/modbus-errors'
+
 const net = require('net')
 jest.mock('net')
 
@@ -10,6 +12,7 @@ import {
   ReadHoldingRegistersCommand, ReadInputRegistersCommand,
   ReadInputStatusCommand
 } from '../modbus-commands'
+import { TypedEvent } from '../util/typed-event'
 
 describe('Server tests', () => {
 
@@ -23,22 +26,39 @@ describe('Server tests', () => {
     expect(server).toBeInstanceOf(ModbusTcpServer)
   })
 
+  it('should close TCP server on call to close method', () => {
+    const server = new ModbusTcpServer().listen(502)
+    expect(net.__server.close.mock.calls.length).toBe(0)
+    server.close()
+    expect(net.__server.close.mock.calls.length).toBe(1)
+  })
+
+  it('should emit a server error on TCP server error', (done) => {
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onServerError.on(e => {
+      expect(e).toBeInstanceOf(Error)
+      expect(e.message).toEqual('Server Error')
+      done()
+    })
+    net.__socket.emit('error', new Error('Server Error'))
+  })
+
   it('should correctly pass options to command factory', () => {
-    let server: any = new ModbusTcpServer();
+    let server: any = new ModbusTcpServer()
     expect(server._commandFactory._options).toBeUndefined()
 
     let options: ModbusTcpServerOptions = {}
-    server = new ModbusTcpServer(options);
+    server = new ModbusTcpServer(options)
     expect(server._commandFactory._options).toEqual(options)
 
     options = { simpleAddressing: false }
-    server = new ModbusTcpServer(options);
+    server = new ModbusTcpServer(options)
     expect(server._commandFactory._options).toEqual(options)
 
     options = { simpleAddressing: true }
-    server = new ModbusTcpServer(options);
+    server = new ModbusTcpServer(options)
     expect(server._commandFactory._options).toEqual(options)
-
   })
 
   it('should use simple addressing when simpleAddressing is blank', (done) => {
@@ -82,7 +102,7 @@ describe('Server tests', () => {
 
 })
 
-describe('Server command tests', () =>{
+describe('Server command tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -200,18 +220,20 @@ describe('Server command tests', () =>{
     net.__socket.emit('data', Buffer.from(coilOnBytes))
   })
 
-  // TODO:
-  // it('should emit an error when invalid ForceSingleCoilCommand is sent', (done) => {
-  //   const coilFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x05, 0x01, 0x10, 0x11, 0x11]
-  //
-  //   const server = new ModbusTcpServer().listen(502)
-  //
-  //   server.onCommandError.on(() => {
-  //     // Test here!
-  //   })
-  //
-  //   net.__socket.emit('data', Buffer.from(coilFailBytes))
-  // })
+  it('should emit an error when invalid ForceSingleCoilCommand is sent', (done) => {
+    const coilFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x05, 0x01, 0x10, 0x11, 0x11]
+
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onCommandError.on((e) => {
+      expect(e).toBeInstanceOf(ModbusCommandError)
+      expect(e.message).toEqual('FORCE_SINGLE_COIL - Invalid coil status received')
+      expect(e.requestBytes).toEqual(Buffer.from(coilFailBytes))
+      done()
+    })
+
+    net.__socket.emit('data', Buffer.from(coilFailBytes))
+  })
 
   it('should emit a PresetSingleRegisterCommand and write a response', (done) => {
     const validRequest = Buffer.from([0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x11, 0x06, 0x00, 0x00, 0x00, 0x03])
@@ -252,17 +274,19 @@ describe('Server command tests', () =>{
     net.__socket.emit('data', Buffer.from(validRequestBytes))
   })
 
-  // TODO:
-  // it('should emit an error when invalid ForceMultipleCoilsCommand is sent', (done) => {
-  //   const coilFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A, 0x03, 0xCD, 0x01]
-  //   const server = new ModbusTcpServer().listen(502)
-  //
-  //   server.onCommandError.on(() => {
-  //     // Test here!
-  //   })
-  //
-  //   net.__socket.emit('data', Buffer.from(coilFailBytes))
-  // })
+  it('should emit an error when invalid ForceMultipleCoilsCommand is sent', (done) => {
+    const coilFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x05, 0x0F, 0x01, 0x10, 0x00, 0x0A, 0x03, 0xCD, 0x01]
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onCommandError.on((e) => {
+      expect(e).toBeInstanceOf(ModbusCommandError)
+      expect(e.message).toEqual('FORCE_MULTIPLE_COILS - Invalid coil status command received')
+      expect(e.requestBytes).toEqual(Buffer.from(coilFailBytes))
+      done()
+    })
+
+    net.__socket.emit('data', Buffer.from(coilFailBytes))
+  })
 
   it('should emit a PresetMultipleRegistersCommand and write a response', (done) => {
     const validRequestBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x05, 0x10, 0x01, 0x10, 0x00, 0x02, 0x04, 0x00, 0x0A, 0x01, 0x02]
@@ -286,19 +310,20 @@ describe('Server command tests', () =>{
     net.__socket.emit('data', Buffer.from(validRequestBytes))
   })
 
-  // TODO:
-  // it('should emit an error when invalid PresetMultipleRegistersCommand is sent', (done) => {
-  //   const registerFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x05, 0x10, 0x01, 0x10, 0x00, 0x02, 0x05, 0x00, 0x0A, 0x01, 0x02]
-  //   const server = new ModbusTcpServer().listen(502)
-  //
-  //   server.onCommandError.on(() => {
-  //     // Test here!
-  //   })
-  //
-  //   net.__socket.emit('data', Buffer.from(registerFailBytes))
-  // })
+  it('should emit an error when invalid PresetMultipleRegistersCommand is sent', (done) => {
+    const registerFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x05, 0x10, 0x01, 0x10, 0x00, 0x02, 0x05, 0x00, 0x0A, 0x01, 0x02]
+    const server = new ModbusTcpServer().listen(502)
+
+    server.onCommandError.on((e) => {
+      expect(e).toBeInstanceOf(ModbusCommandError)
+      expect(e.message).toEqual('PRESET_MULTIPLE_REGISTERS - Invalid register command received')
+      expect(e.requestBytes).toEqual(Buffer.from(registerFailBytes))
+      done()
+    })
+
+    net.__socket.emit('data', Buffer.from(registerFailBytes))
+  })
 
   // TODO: rewrite test names and test close and listen methods
-  // TODO: Test failures are properly emitted from the server
 
 })

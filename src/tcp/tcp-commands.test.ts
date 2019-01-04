@@ -644,7 +644,7 @@ describe('ForceSingleCoilCommand tests', () => {
     const commandFactory: ModbusTcp.CommandFactory = new ModbusTcp.CommandFactory()
     expect(() => {
       const command = (commandFactory.fromPacket(Buffer.from(coilInvalidBytes)) as ForceSingleCoilCommand)
-    }).toThrowError(new ModbusCommandError('FORCE_SINGLE_COIL - Invalid coil status received.'))
+    }).toThrowError(new ModbusCommandError('FORCE_SINGLE_COIL - Invalid coil status received'))
   })
 
   it('should emit a complete response on success', done => {

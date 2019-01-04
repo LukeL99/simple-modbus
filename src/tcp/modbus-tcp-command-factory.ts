@@ -280,7 +280,7 @@ export class ModbusTcpCommandFactory extends ModbusCommandFactory {
         try {
           this._coilStatusGetter(packet)
         } catch {
-          throw new ModbusCommandError('FORCE_SINGLE_COIL - Invalid coil status received.', packet)
+          throw new ModbusCommandError('FORCE_SINGLE_COIL - Invalid coil status received', packet)
         }
         return new ForceSingleCoilCommand(packet, this._unitIdGetter,
           this._functionCodeGetter, this._packetCopySuccessGetter,

@@ -11,6 +11,7 @@ import {
   ReadCoilStatusCommand, ReadHoldingRegistersCommand, ReadInputRegistersCommand, ReadInputStatusCommand
 } from '../modbus-commands'
 import { ModbusCommandFactoryOptions } from '../modbus-command-factory'
+import { ModbusCommandError } from '../error/modbus-errors'
 
 /**
  * Options that only affect the server (timeouts, etc.) should go here,
@@ -19,7 +20,6 @@ import { ModbusCommandFactoryOptions } from '../modbus-command-factory'
 export interface ModbusTcpServerOptions extends ModbusCommandFactoryOptions {
 }
 
-// TODO: Properly handle connection open, close, and packet boundaries
 export class ModbusTcpServer extends ModbusServer {
   private _tcpServer: net.Server
   private _commandFactory = new ModbusTcpCommandFactory()
@@ -35,44 +35,53 @@ export class ModbusTcpServer extends ModbusServer {
       const _this: ModbusTcpServer = this
 
       socket.on('data', data => {
-        // Build object from packet
-        // TODO: Wrap this in try/catch, emit errors from malformed packets
-        let command = this._commandFactory.fromPacket(data)
+        try {
+          // Build object from packet
+          let command = this._commandFactory.fromPacket(data)
 
-        // Listen for success or failure events being emitted from command object
-        command.onComplete.once((command: ModbusCommand<any>) => {
-          socket.write(command.responsePacket)
-        })
+          // Listen for success or failure events being emitted from command object
+          command.onComplete.once((command: ModbusCommand<any>) => {
+            socket.write(command.responsePacket)
+          })
 
-        // Determine packet type and emit corresponding event type
-        switch (command.functionCode) {
-          case ModbusFunctionCode.READ_COIL_STATUS:
-            _this.onReadCoilStatus.emit(command as ReadCoilStatusCommand)
-            break
-          case ModbusFunctionCode.READ_INPUT_STATUS:
-            _this.onReadInputStatus.emit(command as ReadInputStatusCommand)
-            break
-          case ModbusFunctionCode.READ_HOLDING_REGISTERS:
-            _this.onReadHoldingRegisters.emit(command as ReadHoldingRegistersCommand)
-            break
-          case ModbusFunctionCode.READ_INPUT_REGISTERS:
-            _this.onReadInputRegisters.emit(command as ReadInputRegistersCommand)
-            break
-          case ModbusFunctionCode.FORCE_SINGLE_COIL:
-            _this.onForceSingleCoil.emit(command as ForceSingleCoilCommand)
-            break
-          case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
-            _this.onPresetSingleRegister.emit(command as PresetSingleRegisterCommand)
-            break
-          case ModbusFunctionCode.FORCE_MULTIPLE_COILS:
-            _this.onForceMultipleCoils.emit(command as ForceMultipleCoilsCommand)
-            break
-          case ModbusFunctionCode.PRESET_MULTIPLE_REGISTERS:
-            _this.onPresetMultipleRegisters.emit(command as PresetMultipleRegistersCommand)
-            break
+          // Determine packet type and emit corresponding event type
+          switch (command.functionCode) {
+            case ModbusFunctionCode.READ_COIL_STATUS:
+              _this.onReadCoilStatus.emit(command as ReadCoilStatusCommand)
+              break
+            case ModbusFunctionCode.READ_INPUT_STATUS:
+              _this.onReadInputStatus.emit(command as ReadInputStatusCommand)
+              break
+            case ModbusFunctionCode.READ_HOLDING_REGISTERS:
+              _this.onReadHoldingRegisters.emit(command as ReadHoldingRegistersCommand)
+              break
+            case ModbusFunctionCode.READ_INPUT_REGISTERS:
+              _this.onReadInputRegisters.emit(command as ReadInputRegistersCommand)
+              break
+            case ModbusFunctionCode.FORCE_SINGLE_COIL:
+              _this.onForceSingleCoil.emit(command as ForceSingleCoilCommand)
+              break
+            case ModbusFunctionCode.PRESET_SINGLE_REGISTER:
+              _this.onPresetSingleRegister.emit(command as PresetSingleRegisterCommand)
+              break
+            case ModbusFunctionCode.FORCE_MULTIPLE_COILS:
+              _this.onForceMultipleCoils.emit(command as ForceMultipleCoilsCommand)
+              break
+            case ModbusFunctionCode.PRESET_MULTIPLE_REGISTERS:
+              _this.onPresetMultipleRegisters.emit(command as PresetMultipleRegistersCommand)
+              break
+          }
+        } catch (e) {
+          // TODO: Explicit typeguard here, look into changing from try/catch
+          _this.onCommandError.emit(e as ModbusCommandError)
         }
 
       })
+
+      socket.on('error', e => {
+        _this.onServerError.emit(e)
+      })
+
     })
   }
 
@@ -82,9 +91,7 @@ export class ModbusTcpServer extends ModbusServer {
   }
 
   public close(): ModbusTcpServer {
-    if (this._tcpServer) {
-      this._tcpServer.close()
-    }
+    this._tcpServer.close()
     return this
   }
 }

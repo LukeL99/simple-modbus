@@ -7,24 +7,29 @@ import {
   ReadInputStatusCommand
 } from './modbus-commands'
 import { TypedEvent } from './util/typed-event'
+import { ModbusCommandError } from './error/modbus-errors'
 
 /* istanbul ignore next */
 export abstract class ModbusServer {
 
-  public onReadCoilStatus = new TypedEvent<ReadCoilStatusCommand>()
+  public readonly onReadCoilStatus = new TypedEvent<ReadCoilStatusCommand>()
 
-  public onReadInputStatus = new TypedEvent<ReadInputStatusCommand>()
+  public readonly onReadInputStatus = new TypedEvent<ReadInputStatusCommand>()
 
-  public onReadHoldingRegisters = new TypedEvent<ReadHoldingRegistersCommand>()
+  public readonly onReadHoldingRegisters = new TypedEvent<ReadHoldingRegistersCommand>()
 
-  public onReadInputRegisters = new TypedEvent<ReadInputRegistersCommand>()
+  public readonly onReadInputRegisters = new TypedEvent<ReadInputRegistersCommand>()
 
-  public onForceSingleCoil = new TypedEvent<ForceSingleCoilCommand>()
+  public readonly onForceSingleCoil = new TypedEvent<ForceSingleCoilCommand>()
 
-  public onPresetSingleRegister = new TypedEvent<PresetSingleRegisterCommand>()
+  public readonly onPresetSingleRegister = new TypedEvent<PresetSingleRegisterCommand>()
 
-  public onForceMultipleCoils = new TypedEvent<ForceMultipleCoilsCommand>()
+  public readonly onForceMultipleCoils = new TypedEvent<ForceMultipleCoilsCommand>()
 
-  public onPresetMultipleRegisters = new TypedEvent<PresetMultipleRegistersCommand>()
+  public readonly onPresetMultipleRegisters = new TypedEvent<PresetMultipleRegistersCommand>()
+
+  public readonly onCommandError = new TypedEvent<ModbusCommandError>()
+
+  public readonly onServerError = new TypedEvent<Error>()
 
 }
