@@ -3,7 +3,7 @@
 ## A simple library for working with Modbus
 
 [![styled with prettier](https://img.shields.io/badge/styled_with-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
-[![Greenkeeper badge](https://badges.greenkeeper.io/lukel99/simple-modbus.svg)](https://greenkeeper.io/)
+[![Greenkeeper badge](https://badges.greenkeeper.io/LukeL99/simple-modbus.svg)](https://greenkeeper.io/)
 [![Travis](https://travis-ci.org/LukeL99/simple-modbus.svg)](https://travis-ci.org/LukeL99/simple-modbus)
 [![Coveralls](https://coveralls.io/repos/github/LukeL99/simple-modbus/badge.svg)](https://coveralls.io/github/LukeL99/simple-modbus)
 [![Dev Dependencies](https://david-dm.org/LukeL99/simple-modbus/dev-status.svg)](https://david-dm.org/LukeL99/simple-modbus?type=dev)
@@ -44,7 +44,7 @@ Start a ModbusTCP server, and listen for all implemented Modbus commands.
 
 Typescript:
 ```typescript
-import { ModbusCommandException, ModbusTcp } from '..'
+import { ModbusCommandException, ModbusTcp } from 'simple-modbus'
 
 const server = new ModbusTcp.Server()
 server.listen(502)
