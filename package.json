@@ -90,6 +90,8 @@
   "devDependencies": {
     "@commitlint/cli": "^7.1.2",
     "@commitlint/config-conventional": "^7.1.2",
+    "@semantic-release/commit-analyzer": "^6.1.0",
+    "@semantic-release/release-notes-generator": "^7.1.4",
     "@types/jest": "^23.3.2",
     "@types/node": "^10.11.0",
     "all-contributors-cli": "^5.4.1",
