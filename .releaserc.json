@@ -3,7 +3,7 @@
     ["@semantic-release/commit-analyzer", {
       "preset": "angular",
       "releaseRules": [
-        {"type": "docs", "scope":"readme", "release": "patch"},
+        {"type": "docs", "release": "patch"},
         {"type": "refactor", "release": "patch"},
         {"type": "style", "release": "patch"}
       ],
