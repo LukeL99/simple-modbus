@@ -3,7 +3,7 @@ import { ModbusCommandError } from '../error/modbus-errors'
 const net = require('net')
 jest.mock('net')
 
-import { ModbusTcpServer, ModbusTcpServerOptions } from './modbus-tcp-server'
+import { ModbusTcp } from '../simple-modbus'
 import {
   ForceMultipleCoilsCommand,
   ForceSingleCoilCommand,
@@ -14,6 +14,7 @@ import {
   ReadInputRegistersCommand,
   ReadInputStatusCommand
 } from '../modbus-commands'
+import { ModbusTcpServerOptions } from './modbus-tcp-server'
 
 describe('Server tests', () => {
   beforeEach(() => {
@@ -22,19 +23,19 @@ describe('Server tests', () => {
   })
 
   it('should return a server', () => {
-    const server = new ModbusTcpServer().listen(502)
-    expect(server).toBeInstanceOf(ModbusTcpServer)
+    const server = new ModbusTcp.Server().listen(502)
+    expect(server).toBeInstanceOf(ModbusTcp.Server)
   })
 
   it('should close TCP server on call to close method', () => {
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
     expect(net.__server.close.mock.calls.length).toBe(0)
     server.close()
     expect(net.__server.close.mock.calls.length).toBe(1)
   })
 
   it('should emit a server error on TCP server error', done => {
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onServerError.on(e => {
       expect(e).toBeInstanceOf(Error)
@@ -45,19 +46,19 @@ describe('Server tests', () => {
   })
 
   it('should correctly pass options to command factory', () => {
-    let server: any = new ModbusTcpServer()
+    let server: any = new ModbusTcp.Server()
     expect(server._commandFactory._options).toBeUndefined()
 
     let options: ModbusTcpServerOptions = {}
-    server = new ModbusTcpServer(options)
+    server = new ModbusTcp.Server(options)
     expect(server._commandFactory._options).toEqual(options)
 
     options = { simpleAddressing: false }
-    server = new ModbusTcpServer(options)
+    server = new ModbusTcp.Server(options)
     expect(server._commandFactory._options).toEqual(options)
 
     options = { simpleAddressing: true }
-    server = new ModbusTcpServer(options)
+    server = new ModbusTcp.Server(options)
     expect(server._commandFactory._options).toEqual(options)
   })
 
@@ -76,7 +77,7 @@ describe('Server tests', () => {
       0x00,
       0x03
     ])
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onPresetSingleRegister.on(command => {
       expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
@@ -102,7 +103,7 @@ describe('Server tests', () => {
       0x00,
       0x03
     ])
-    const server = new ModbusTcpServer({ simpleAddressing: true }).listen(502)
+    const server = new ModbusTcp.Server({ simpleAddressing: true }).listen(502)
 
     server.onPresetSingleRegister.on(command => {
       expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
@@ -128,7 +129,7 @@ describe('Server tests', () => {
       0x00,
       0x03
     ])
-    const server = new ModbusTcpServer({ simpleAddressing: false }).listen(502)
+    const server = new ModbusTcp.Server({ simpleAddressing: false }).listen(502)
 
     server.onPresetSingleRegister.on(command => {
       expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
@@ -219,7 +220,7 @@ describe('Server command tests', () => {
       0x1b
     ]
 
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onReadCoilStatus.on(command => {
       expect(command).toBeInstanceOf(ReadCoilStatusCommand)
@@ -289,7 +290,7 @@ describe('Server command tests', () => {
       0x35
     ]
 
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onReadInputStatus.on(command => {
       expect(command).toBeInstanceOf(ReadInputStatusCommand)
@@ -339,7 +340,7 @@ describe('Server command tests', () => {
       0x40
     ]
 
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onReadHoldingRegisters.on(command => {
       expect(command).toBeInstanceOf(ReadHoldingRegistersCommand)
@@ -389,7 +390,7 @@ describe('Server command tests', () => {
       0x40
     ]
 
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onReadInputRegisters.on(command => {
       expect(command).toBeInstanceOf(ReadInputRegistersCommand)
@@ -406,7 +407,7 @@ describe('Server command tests', () => {
   it('should emit a ForceSingleCoilCommand and write a response', done => {
     const coilOnBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x05, 0x01, 0x10, 0xff, 0x00]
 
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onForceSingleCoil.on(command => {
       expect(command).toBeInstanceOf(ForceSingleCoilCommand)
@@ -423,7 +424,7 @@ describe('Server command tests', () => {
   it('should emit an error when invalid ForceSingleCoilCommand is sent', done => {
     const coilFailBytes = [0x00, 0x01, 0x00, 0x00, 0x00, 0x06, 0x05, 0x05, 0x01, 0x10, 0x11, 0x11]
 
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onCommandError.on(e => {
       expect(e).toBeInstanceOf(ModbusCommandError)
@@ -464,7 +465,7 @@ describe('Server command tests', () => {
       0x00,
       0x03
     ])
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onPresetSingleRegister.on(command => {
       expect(command).toBeInstanceOf(PresetSingleRegisterCommand)
@@ -514,7 +515,7 @@ describe('Server command tests', () => {
       0x0a
     ]
 
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onForceMultipleCoils.on(command => {
       expect(command).toBeInstanceOf(ForceMultipleCoilsCommand)
@@ -547,7 +548,7 @@ describe('Server command tests', () => {
       0xcd,
       0x01
     ]
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onCommandError.on(e => {
       expect(e).toBeInstanceOf(ModbusCommandError)
@@ -597,7 +598,7 @@ describe('Server command tests', () => {
       0x02
     ]
 
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onPresetMultipleRegisters.on(command => {
       expect(command).toBeInstanceOf(PresetMultipleRegistersCommand)
@@ -632,7 +633,7 @@ describe('Server command tests', () => {
       0x01,
       0x02
     ]
-    const server = new ModbusTcpServer().listen(502)
+    const server = new ModbusTcp.Server().listen(502)
 
     server.onCommandError.on(e => {
       expect(e).toBeInstanceOf(ModbusCommandError)
