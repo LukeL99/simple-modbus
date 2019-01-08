@@ -14,7 +14,6 @@ import {
   ReadInputRegistersCommand,
   ReadInputStatusCommand
 } from '../modbus-commands'
-import { ModbusTcpServerOptions } from './modbus-tcp-server'
 
 describe('Server tests', () => {
   beforeEach(() => {
@@ -49,7 +48,7 @@ describe('Server tests', () => {
     let server: any = new ModbusTcp.Server()
     expect(server._commandFactory._options).toBeUndefined()
 
-    let options: ModbusTcpServerOptions = {}
+    let options: ModbusTcp.ServerOptions = {}
     server = new ModbusTcp.Server(options)
     expect(server._commandFactory._options).toEqual(options)
 

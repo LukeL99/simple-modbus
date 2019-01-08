@@ -1,4 +1,7 @@
-import { ModbusTcpServer as Server } from './modbus-tcp-server'
+import {
+  ModbusTcpServer as Server,
+  ModbusTcpServerOptions as ServerOptions
+} from './modbus-tcp-server'
 import { ModbusTcpCommandFactory as CommandFactory } from './modbus-tcp-command-factory'
 
-export { Server, CommandFactory }
+export { Server, ServerOptions, CommandFactory }
